@@ -32,6 +32,26 @@
   #speedNum { font-size: 22px; font-weight: 600; letter-spacing: 0.3px; min-width: 58px; text-align: right; }
   #speedUnit { font-size: 12px; color: #9fb2bd; }
   @media (max-width: 640px) { #speedHud { bottom: calc(12px + env(safe-area-inset-bottom)); padding: 6px 13px; } #speedNum { font-size: 19px; min-width: 50px; } }
+  #pauseBtn {
+    position: fixed; right: 16px; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 7;
+    background: rgba(16,22,26,0.55); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+    color: #f3f6f7; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px;
+    padding: 9px 15px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  #pauseBtn:hover { background: rgba(36,46,52,0.72); }
+  #pauseBtn.paused { background: #d85a30; border-color: #d85a30; color: #fff; }
+  #elemHud {
+    position: fixed; left: 16px; top: 16px; z-index: 8; min-width: 150px; max-width: 240px;
+    background: rgba(16,22,26,0.64); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    color: #f3f6f7; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px;
+    padding: 10px 14px 11px; box-shadow: 0 2px 12px rgba(0,0,0,0.28); font-size: 13px;
+  }
+  #elemHud[hidden] { display: none; }
+  #elemHud .lbl { font-size: 10px; color: #9fb2bd; text-transform: uppercase; letter-spacing: 0.7px; }
+  #elemHud .num { font-size: 23px; font-weight: 700; color: #ffd27a; letter-spacing: 0.3px; line-height: 1.1; }
+  #elemHud .nm  { margin-top: 1px; color: #e7eef1; }
+  #elemHud .close { position: absolute; top: 4px; right: 8px; cursor: pointer; color: #9fb2bd; font-size: 17px; line-height: 1; }
+  #elemHud .close:hover { color: #fff; }
   .btns { display: flex; gap: 5px; }
   .btns button {
     flex: 1; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06);
@@ -136,6 +156,15 @@
 </div>
 
 <div id="speedHud"><span id="speedNum">0</span><span id="speedUnit">km/h</span></div>
+
+<button id="pauseBtn" aria-label="Pause animation">&#10073;&#10073;&nbsp;Pause</button>
+
+<div id="elemHud" hidden>
+  <span class="close" id="elemClose">&times;</span>
+  <div class="lbl">Turntable element</div>
+  <div class="num" id="elemNum">—</div>
+  <div class="nm" id="elemName"></div>
+</div>
 
 <script>
   // ---- diagnostics: surface any error on screen instead of a silent blue page ----
@@ -1718,7 +1747,15 @@ function startApp() {
   // Small centred turntable: the vehicle stops centred on the diameter bridge, the bridge
   // rotates 180° in place (the approach tracks curve in to the throat to make this work).
   const tables = [];
+  // registry of pickable turntable elements (each tagged with a running element number)
+  const tableParts = [];
+  let curSide = 0;
+  function regPart(mesh, name) {
+    if (mesh) { mesh.userData.part = { id: tableParts.length + 1, name, side: curSide }; tableParts.push(mesh); }
+    return mesh;
+  }
   for (const side of [-1, 1]) {
+    curSide = side;
     const cx = side * TABLE_X;
     const gy = 1.6;
 
@@ -1726,11 +1763,11 @@ function startApp() {
     const drum = new THREE.Mesh(new THREE.CylinderGeometry(R_TABLE + 1.4, R_TABLE + 1.7, DECK_TOP - 0.4 - gy, 44), concMat);
     drum.position.set(cx, (DECK_TOP - 0.4 + gy) / 2, 0);
     drum.castShadow = drum.receiveShadow = true;
-    scene.add(drum);
+    scene.add(drum); regPart(drum, 'Pit drum wall');
     const ring = new THREE.Mesh(new THREE.RingGeometry(R_TABLE + 0.12, R_TABLE + 1.4, 44), concDark);
     ring.rotation.x = -Math.PI / 2;
     ring.position.set(cx, DECK_TOP - 0.06, 0);
-    scene.add(ring);
+    scene.add(ring); regPart(ring, 'Walkway ring');
     // guard rail: posts + top rail, but OPEN where each track meets the rim so nothing fouls the
     // vehicle. The two connections sit at directions (−side·cosδ, ±side·sinδ) from the centre.
     const grR = R_TABLE + 1.26;
@@ -1745,18 +1782,18 @@ function startApp() {
       const a = i / NP * Math.PI * 2;
       if (railGap(a)) continue;
       const px = cx + Math.cos(a) * grR, pz = Math.sin(a) * grR;
-      scene.add(strut(new THREE.Vector3(px, DECK_TOP - 0.05, pz),
-                      new THREE.Vector3(px, DECK_TOP + 1.0, pz), 0.035, 0.03, darkMat, false));
+      scene.add(regPart(strut(new THREE.Vector3(px, DECK_TOP - 0.05, pz),
+                      new THREE.Vector3(px, DECK_TOP + 1.0, pz), 0.035, 0.03, darkMat, false), 'Guard-rail post'));
       const a2 = (i + 1) / NP * Math.PI * 2;
       if (!railGap(a2)) {   // top rail segment to the next post, only if it is kept too
         const qx = cx + Math.cos(a2) * grR, qz = Math.sin(a2) * grR;
-        scene.add(strut(new THREE.Vector3(px, DECK_TOP + 1.0, pz),
-                        new THREE.Vector3(qx, DECK_TOP + 1.0, qz), 0.035, 0.035, darkMat, false));
+        scene.add(regPart(strut(new THREE.Vector3(px, DECK_TOP + 1.0, pz),
+                        new THREE.Vector3(qx, DECK_TOP + 1.0, qz), 0.035, 0.035, darkMat, false), 'Guard rail'));
       }
     }
     // machinery house + transformer beside the pit
-    box(4.6, 3.1, 3.4, concDark, cx - side * 2, gy + 1.55, R_TABLE + 4.8, scene, true);
-    box(1.2, 0.9, 1.6, darkMat, cx - side * 5.4, gy + 0.45, R_TABLE + 4.2, scene, true);
+    regPart(box(4.6, 3.1, 3.4, concDark, cx - side * 2, gy + 1.55, R_TABLE + 4.8, scene, true), 'Machinery house');
+    regPart(box(1.2, 0.9, 1.6, darkMat, cx - side * 5.4, gy + 0.45, R_TABLE + 4.2, scene, true), 'Transformer');
 
     // rotating deck
     const deck = new THREE.Group();
@@ -1765,7 +1802,7 @@ function startApp() {
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(R_TABLE, R_TABLE, 0.55, 52), concDark);
     disc.position.y = DECK_TOP - 0.28;
     disc.castShadow = disc.receiveShadow = true;
-    deck.add(disc);
+    deck.add(disc); regPart(disc, 'Turntable disc');
     // hazard chevrons around the rim
     const NCH = 44;
     for (let i = 0; i < NCH; i++) {
@@ -1776,24 +1813,25 @@ function startApp() {
     }
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.05, 0.16, 20), redMat);
     hub.position.y = DECK_TOP + 0.06;
-    deck.add(hub);
+    deck.add(hub); regPart(hub, 'Centre bearing hub');
     // diameter bridge track on the deck: rails along x (at rest), through the centre
     const halfLen = R_TABLE;          // wall/support spans the disc diameter
     const headHalf = R_TABLE + 0.6;   // rail HEAD overhangs the rim a touch so it overlaps the static rail when
                                       // aligned — the two ended exactly at the rim before, meeting with no overlap → a visible gap
     for (const rs of [-RAIL_HALF, RAIL_HALF]) {
+      const sd = rs > 0 ? 'N' : 'S';
       const wall = box(2 * halfLen, 1.42, 0.34, concDark, 0, 8 - HEAD_R - 0.71, rs, deck, false);
-      wall.castShadow = true;
+      wall.castShadow = true; regPart(wall, 'Bridge girder (' + sd + ')');
       const head = new THREE.Mesh(new THREE.CylinderGeometry(HEAD_R, HEAD_R, 2 * headHalf, 10), railMat);
       head.rotation.z = Math.PI / 2;
       head.position.set(0, 8, rs);
       head.castShadow = true;
-      deck.add(head);
+      deck.add(head); regPart(head, 'Bridge rail (' + sd + ')');
     }
     // walkway plates either side of the bridge
     for (const off of [-RAIL_HALF - 1.0, RAIL_HALF + 1.0]) {
       const wlen = 2 * (Math.sqrt(Math.max(R_TABLE * R_TABLE - (Math.abs(off) + 0.55) ** 2, 1)) - 0.3);
-      box(wlen, 0.05, 1.0, steelDark, 0, DECK_TOP + 0.03, off, deck, false);
+      regPart(box(wlen, 0.05, 1.0, steelDark, 0, DECK_TOP + 0.03, off, deck, false), 'Bridge walkway plate');
     }
 
     // alignment angles: which way the bridge points to meet each track
@@ -1809,6 +1847,29 @@ function startApp() {
     tables.push({ side, cx, deck, S, yawEntry, yawExit, bridgeA, bridgeB, busy: false });
     if (side > 0) buildDepot(side);   // single maintenance works at the far end; start station has none
   }
+  // per-element length adjustments (by element number). Geometry is centred, so scaling the long axis
+  // trims/extends the piece equally at both ends.
+  (function tweakParts() {
+    // rules keyed by element NAME (immune to renumbering); an optional `side` (-1 = West, +1 = East)
+    // restricts a rule to one turntable. Geometry is centred, so scaling the long axis trims/extends
+    // the piece equally at both ends.
+    const rules = [
+      { name: 'Bridge girder (N)', delta: -1.3 },             // both turntables
+      { name: 'Bridge girder (S)', delta: +0.8 },             // both turntables
+      { name: 'Bridge rail (N)', side: -1, delta: -1.3 },     // West turntable only (the rail last referred to)
+    ];
+    for (const m of tableParts) {
+      const p = m.userData.part;
+      const rule = rules.find(r => r.name === p.name && (r.side == null || r.side === p.side));
+      if (!rule || !m.geometry) continue;
+      m.geometry.computeBoundingBox();
+      const bb = m.geometry.boundingBox;
+      const sx = bb.max.x - bb.min.x, sy = bb.max.y - bb.min.y, sz = bb.max.z - bb.min.z;
+      const axis = (sx >= sy && sx >= sz) ? 'x' : (sz >= sy ? 'z' : 'y');   // the piece's long (length) axis
+      const len = axis === 'x' ? sx : axis === 'z' ? sz : sy;
+      if (len > 0) m.scale[axis] *= (len + rule.delta) / len;
+    }
+  })();
   function tableAt(side) { return tables[side > 0 ? 1 : 0]; }
   function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % (2 * Math.PI)) - Math.PI; return a + d * t; }
 
@@ -2193,10 +2254,15 @@ function startApp() {
   let dragging = false, px = 0, py = 0, pinchD = 0;
   const clampPitch = p => Math.max(-1.5, Math.min(1.5, p));   // near-vertical: look straight up at the underside
   const clampZoom = z => Math.max(0.16, Math.min(4.5, z));    // zoom in close enough to fit under the elevated vehicle
-  canvas.addEventListener('pointerdown', e => { dragging = true; px = e.clientX; py = e.clientY; });
-  window.addEventListener('pointerup', () => dragging = false);
+  let downX = 0, downY = 0, movedFar = false;
+  canvas.addEventListener('pointerdown', e => { dragging = true; px = e.clientX; py = e.clientY; downX = e.clientX; downY = e.clientY; movedFar = false; });
+  window.addEventListener('pointerup', e => {
+    if (dragging && !movedFar) pickAt(e.clientX, e.clientY);   // a tap (not a drag) → select an element
+    dragging = false;
+  });
   window.addEventListener('pointermove', e => {
     if (!dragging) return;
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) movedFar = true;
     userYaw -= (e.clientX - px) * 0.005;
     userPitch = clampPitch(userPitch + (e.clientY - py) * 0.005);
     px = e.clientX; py = e.clientY;
@@ -2220,6 +2286,43 @@ function startApp() {
       hasInteracted = true;
     }
   }, { passive: true });
+
+  // ---------- element picker: tap a turntable part to see its element number ----------
+  const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+  const highlightMat = new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xff7a1c, emissiveIntensity: 0.55, roughness: 0.45, metalness: 0.2 });
+  const elemHud = document.getElementById('elemHud');
+  const elemNumEl = document.getElementById('elemNum'), elemNameEl = document.getElementById('elemName');
+  let selectedPart = null;
+  function selectPart(mesh) {
+    if (selectedPart && selectedPart.userData._mat) { selectedPart.material = selectedPart.userData._mat; selectedPart.userData._mat = null; }
+    selectedPart = (mesh && mesh.userData.part) ? mesh : null;
+    if (selectedPart) {
+      selectedPart.userData._mat = selectedPart.material;
+      selectedPart.material = highlightMat;
+      elemNumEl.textContent = '#' + selectedPart.userData.part.id;
+      elemNameEl.textContent = selectedPart.userData.part.name;
+      elemHud.hidden = false;
+    } else { elemHud.hidden = true; }
+  }
+  function pickAt(clientX, clientY) {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -((clientY - r.top) / r.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(tableParts, false);
+    selectPart(hits.length ? hits[0].object : null);
+  }
+  document.getElementById('elemClose').onclick = () => selectPart(null);
+
+  // ---------- pause toggle ----------
+  window.__paused = false;
+  const pauseBtn = document.getElementById('pauseBtn');
+  function setPaused(p) {
+    window.__paused = p;
+    pauseBtn.classList.toggle('paused', p);
+    pauseBtn.innerHTML = p ? '&#9654;&nbsp;Play' : '&#10073;&#10073;&nbsp;Pause';
+  }
+  pauseBtn.onclick = () => setPaused(!window.__paused);
 
   function setCam(mode) {
     camMode = mode;
@@ -2324,7 +2427,8 @@ function startApp() {
 
   function animate() {
     requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.05);
+    const rawDt = Math.min(clock.getDelta(), 0.05);
+    const dt = window.__paused ? 0 : rawDt;   // paused freezes the world but the camera stays live
     const cruise = 220 / 3.6;                 // fixed design cruise (~220 km/h)
     if (window.__waterMats) for (const t of window.__waterMats) { t.offset.y += dt * 0.035; t.offset.x += dt * 0.012; }
     if (window.__windU) window.__windU.value += dt;   // gentle tree-canopy sway
@@ -2390,7 +2494,7 @@ function startApp() {
       targetLook = carA.root.localToWorld(new THREE.Vector3(0, 1.4, 0));
       posRate = 80; lookRate = 80;
     } else { // orbit overview
-      if (!dragging && !hasInteracted) userYaw += dt * 0.05;   // gentle auto-rotation until the user takes over
+      if (!dragging && !hasInteracted) userYaw += rawDt * 0.05;   // gentle auto-rotation until the user takes over
       targetPos = focus.clone().add(new THREE.Vector3(0, 34, 70));
       targetLook = focus;
       posRate = 20;
@@ -2409,8 +2513,16 @@ function startApp() {
     // never drop through the ground/water — lets you swing under the elevated vehicle and look up
     const groundMin = terrainH(targetPos.x, targetPos.z) + 1.0;
     if (targetPos.y < groundMin) targetPos.y = groundMin;
-    camPos.lerp(targetPos, 1 - Math.exp(-posRate * dt));
-    camLook.lerp(targetLook, 1 - Math.exp(-lookRate * dt));
+    // attached close-up views (bogie, wing) lock rigidly to the vehicle — smoothing them just makes the
+    // camera trail the vehicle at speed (the "laggy" tracking). Other views keep frame-rate-independent easing.
+    const attached = (camMode === 'bogie' || camMode === 'wing');
+    if (attached) {
+      camPos.copy(targetPos);
+      camLook.copy(targetLook);
+    } else {
+      camPos.lerp(targetPos, 1 - Math.exp(-posRate * rawDt));
+      camLook.lerp(targetLook, 1 - Math.exp(-lookRate * rawDt));
+    }
     camera.position.copy(camPos);
     camera.lookAt(camLook);
 
