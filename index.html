@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Cable Glide — twin track &amp; turning tables</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe3ee; color: #eef2f4; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; z-index: 0; touch-action: none; }
+  #hud {
+    position: fixed; left: 16px; bottom: 16px; z-index: 10;
+    background: rgba(20, 26, 30, 0.78); color: #eef2f4;
+    backdrop-filter: blur(6px);
+    border-radius: 12px; padding: 14px 16px; width: 308px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+    max-width: calc(100vw - 32px); box-sizing: border-box;
+  }
+  #hud h1 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  #hud .sub { font-size: 11.5px; color: #9fb2bd; margin: 0 0 12px; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .row label { font-size: 12px; color: #c4d2da; min-width: 46px; }
+  input[type=range] { flex: 1; accent-color: #d85a30; }
+  #speedVal { font-size: 12px; min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+  #speedHud {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 6;
+    display: flex; align-items: baseline; gap: 6px; padding: 7px 16px; border-radius: 12px;
+    background: rgba(16,22,26,0.42); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+    color: #f3f6f7; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  }
+  #speedNum { font-size: 22px; font-weight: 600; letter-spacing: 0.3px; min-width: 58px; text-align: right; }
+  #speedUnit { font-size: 12px; color: #9fb2bd; }
+  @media (max-width: 640px) { #speedHud { bottom: calc(12px + env(safe-area-inset-bottom)); padding: 6px 13px; } #speedNum { font-size: 19px; min-width: 50px; } }
+  .btns { display: flex; gap: 5px; }
+  .btns button {
+    flex: 1; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06);
+    color: #dfe8ec; font-size: 11.5px; padding: 6px 0; border-radius: 8px; cursor: pointer;
+  }
+  .btns button.active { background: #d85a30; border-color: #d85a30; color: #fff; }
+  .btns button:hover { background: rgba(255,255,255,0.14); }
+  .btns button.active:hover { background: #e0653c; }
+  #status { font-size: 12px; color: #fff; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+  #pause { width: 100%; border: none; background: rgba(255,255,255,0.1); color: #eef2f4;
+    font-size: 12px; padding: 7px 0; border-radius: 8px; cursor: pointer; }
+  #pause:hover { background: rgba(255,255,255,0.18); }
+  #hint { font-size: 11px; color: #8da0ab; margin-top: 10px; line-height: 1.45; }
+  #loadBadge {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,26,30,0.7); color: #fff; font-size: 13px;
+    padding: 8px 16px; border-radius: 999px; z-index: 20; transition: opacity 0.6s;
+  }
+  #hudToggle {
+    position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 11;
+    display: none; background: rgba(20,26,30,0.82); color: #eef2f4;
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 999px;
+    padding: 10px 16px; font-size: 13px; cursor: pointer; backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+  }
+  #hudToggle.show { display: block; }
+  #hud.collapsed { display: none; }
+  #hudClose {
+    position: absolute; top: 6px; right: 8px; background: transparent; border: none;
+    color: #9fb2bd; font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 6px;
+  }
+  #hudClose:hover { color: #fff; }
+  @media (max-width: 560px), (max-height: 480px) {
+    #hud {
+      left: 8px; right: 8px; bottom: 8px; width: auto; padding: 10px 12px;
+      bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+    #hud h1 { font-size: 14px; }
+    #hud .sub { margin-bottom: 8px; }
+    .row, #status { margin-bottom: 7px; }
+    #hint { display: none; }
+    #loadBadge { top: calc(10px + env(safe-area-inset-top)); font-size: 12px; }
+  }
+  /* ---- explainer chapter panel (top-left, compact & transparent so it never blocks the view) ---- */
+  #explain {
+    position: fixed; left: 16px; top: 16px; z-index: 10;
+    background: rgba(16, 22, 26, 0.42); color: #eef2f4; backdrop-filter: blur(7px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 11px; padding: 9px 11px 11px; width: 250px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box;
+  }
+  .ex-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #explain h1 { font-size: 12.5px; font-weight: 600; margin: 0; color: #f3f6f7; }
+  #explainClose { background: transparent; border: none; color: #9fb2bd; font-size: 17px; line-height: 1; cursor: pointer; padding: 0 2px; }
+  #explainClose:hover { color: #fff; }
+  #explain .chapters { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  #explain .chapters button {
+    flex: 1 1 auto; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05);
+    color: #dfe8ec; font-size: 11px; padding: 5px 7px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  #explain .chapters button:hover { background: rgba(255,255,255,0.13); }
+  #explain .chapters button.active { background: #d85a30; border-color: #d85a30; color: #fff; }
+  #chapterTitle { font-size: 12px; font-weight: 600; color: #fff; margin: 9px 0 3px; }
+  #chapterText { font-size: 11.5px; line-height: 1.42; color: #c0ced6; margin: 0; }
+  #explainToggle {
+    position: fixed; left: 16px; top: calc(16px + env(safe-area-inset-top)); z-index: 11;
+    display: none; background: rgba(16,22,26,0.6); color: #eef2f4;
+    border: 1px solid rgba(255,255,255,0.16); border-radius: 999px;
+    padding: 8px 14px; font-size: 12px; cursor: pointer; backdrop-filter: blur(7px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+  }
+  #explainToggle.show { display: block; }
+  #explain.collapsed { display: none; }
+  @media (max-width: 560px), (max-height: 480px) {
+    #explain { left: 8px; top: calc(8px + env(safe-area-inset-top)); width: 232px; padding: 8px 10px 9px; max-height: calc(100vh - 16px); }
+    #explainToggle { left: 8px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="loadBadge">Clamping the bogies onto the rails…</div>
+
+<button id="explainToggle" aria-label="Show explanation">&#9432;&nbsp; How it works</button>
+
+<div id="explain">
+  <div class="ex-head">
+    <h1>Cable Glide — how it works</h1>
+    <button id="explainClose" aria-label="Hide">&times;</button>
+  </div>
+  <div class="chapters">
+    <button data-ch="0" class="active">Concept</button>
+    <button data-ch="1">Clamp</button>
+    <button data-ch="2">Track</button>
+    <button data-ch="3">Wings</button>
+    <button data-ch="4">Turbulence</button>
+    <button data-ch="5">Stations</button>
+  </div>
+  <div id="chapterTitle"></div>
+  <p id="chapterText"></p>
+</div>
+
+<div id="speedHud"><span id="speedNum">0</span><span id="speedUnit">km/h</span></div>
+
+<script>
+  // ---- diagnostics: surface any error on screen instead of a silent blue page ----
+  (function () {
+    const ov = document.createElement('div');
+    ov.id = 'errOverlay';
+    ov.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;z-index:99;display:none;' +
+      'background:#7a1f1f;color:#fff;font:12px/1.5 monospace;padding:12px 14px;border-radius:10px;white-space:pre-wrap;max-height:45vh;overflow:auto';
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ov));
+    window.__showErr = msg => {
+      ov.style.display = 'block';
+      ov.textContent += msg + '\n';
+    };
+    window.addEventListener('error', e => {
+      // ignore resource-load errors (script/img/link) and opaque cross-origin "Script error."
+      if (e.target && e.target !== window && e.target.tagName) return;
+      if (!e.message || e.message === 'Script error.') return;
+      window.__showErr('Error: ' + e.message + (e.filename ? '\n  ' + e.filename + ':' + e.lineno : ''));
+    }, true);
+    window.addEventListener('unhandledrejection', e => { if (e && e.reason) console.warn('Rejection:', e.reason); });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        onerror="window.__threeCdnFailed=true"></script>
+<script>
+function startApp() {
+  const canvas = document.getElementById('scene');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.02;            // a touch brighter / punchier
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xcfe3ee);
+  scene.fog = new THREE.Fog(0xcfe3ee, 720, 2500);
+
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 4000);
+
+  // ---------- Lighting ----------
+  const SUN_DIR = new THREE.Vector3(180, 285, 160).normalize();   // points toward the sun; matches sky
+  const SUN_COLOR = 0xfff4e2, SUN_INT = 1.5;
+
+  // ambient: sky/ground bounce + a small cool lift (replaces the old directional fill — an extra
+  // directional light would corrupt the CSM cascade loop, so fill must be direction-independent).
+  // Kept deliberately low so shadows stay strong (the less fill in shadow, the deeper the shadow).
+  scene.add(new THREE.HemisphereLight(0xdcecf6, 0x83a85c, 0.42));
+  scene.add(new THREE.AmbientLight(0xbcd0e4, 0.06));
+
+  // ---------- Key light + shadows ----------
+  // Cascaded Shadow Maps (CSM) cover the WHOLE camera view with a sharp near cascade + stable far
+  // cascades, so every STATIC object (track, pylons, stations) always casts a shadow wherever it is
+  // on screen — independent of where the vehicle is. If the add-on can't load, we fall back to a
+  // single large STATIC shadow frustum spanning the entire line (coarser, but still always-on and
+  // not vehicle-dependent). Either way, static shadows no longer blink in and out with the vehicle.
+  let csm = null, sun = null;
+  window.__csm = null;
+  const lightDir = SUN_DIR.clone().negate();          // travel direction of the sunlight
+  try {
+    if (typeof THREE.CSM !== 'undefined') {
+      csm = new THREE.CSM({
+        camera, parent: scene, cascades: 3, maxFar: 1800,
+        mode: 'practical', shadowMapSize: 2048,
+        lightDirection: lightDir, lightIntensity: SUN_INT, lightMargin: 280
+      });
+      csm.lights.forEach(l => {
+        l.color.setHex(SUN_COLOR);
+        l.shadow.bias = -0.0004; l.shadow.normalBias = 0.4;
+      });
+      window.__csm = csm;
+    }
+  } catch (e) { console.warn('CSM init failed → static sun:', e.message); csm = null; }
+
+  if (!csm) {
+    // single sun whose shadow frustum FOLLOWS the view centre each frame (see the main loop) — a tight
+    // frustum gives sharp, realistic shadows near the action; distant terrain fades into haze anyway.
+    sun = new THREE.DirectionalLight(SUN_COLOR, SUN_INT);
+    sun.position.copy(SUN_DIR).multiplyScalar(1200);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(4096, 4096);
+    const S = 620;
+    sun.shadow.camera.left = -S; sun.shadow.camera.right = S;
+    sun.shadow.camera.top = S; sun.shadow.camera.bottom = -S;
+    sun.shadow.camera.near = 20; sun.shadow.camera.far = 2600;
+    sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.7;
+    sun.shadow.radius = 2.5;
+    sun.target.position.set(0, 0, 0);
+    scene.add(sun, sun.target);
+    window.__sun = sun;
+  }
+
+  // ---------- Sky backdrop + image-based environment lighting (self-contained, no add-ons) ----------
+  (function buildSky() {
+    try {
+      const w = 1024, h = 512;
+      const paint = (withSun) => {
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        const g = cv.getContext('2d');
+        const grd = g.createLinearGradient(0, 0, 0, h);
+        grd.addColorStop(0.00, '#27568f');   // zenith
+        grd.addColorStop(0.32, '#5c91c4');
+        grd.addColorStop(0.46, '#a9cbe0');
+        grd.addColorStop(0.50, '#d9e7ea');   // horizon haze (matches scene.fog)
+        grd.addColorStop(0.54, '#b7c3c4');
+        grd.addColorStop(0.72, '#8f9486');
+        grd.addColorStop(1.00, '#6a6e60');   // ground
+        g.fillStyle = grd; g.fillRect(0, 0, w, h);
+        if (withSun) {                       // a defined sun in the VISIBLE sky only — NOT in the reflection env
+          const lon = Math.atan2(SUN_DIR.x, SUN_DIR.z), lat = Math.asin(Math.max(-1, Math.min(1, SUN_DIR.y)));
+          const su = (lon / (2 * Math.PI) + 0.5) * w, sv = (0.5 - lat / Math.PI) * h;
+          g.globalCompositeOperation = 'lighter';
+          for (const [r, a] of [[160, 0.7], [64, 0.85], [26, 1]]) {
+            const rg = g.createRadialGradient(su, sv, 0, su, sv, r);
+            rg.addColorStop(0, 'rgba(255,246,225,' + a + ')'); rg.addColorStop(1, 'rgba(255,244,220,0)');
+            g.fillStyle = rg; g.fillRect(0, 0, w, h);
+          }
+          g.globalCompositeOperation = 'source-over';
+        }
+        const t = new THREE.CanvasTexture(cv);
+        t.mapping = THREE.EquirectangularReflectionMapping; t.encoding = THREE.sRGBEncoding;
+        return t;
+      };
+      scene.background = paint(true);                       // infinite skybox with a visible sun
+      // environment map WITHOUT a sharp sun → shiny metal (rails, ropes) no longer shows a hot specular
+      // streak that lined up into a "yellow line" at the default track angle. Soft sky reflections only.
+      const envTex = paint(false);
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      pmrem.compileEquirectangularShader();
+      scene.environment = pmrem.fromEquirectangular(envTex).texture;
+      pmrem.dispose(); envTex.dispose();
+    } catch (e) { console.warn('Sky/env skipped:', e.message); }
+  })();
+
+  // tileable procedural water-ripple NORMAL map (shared by the river + the lakes; scrolled each frame)
+  function makeRippleNormal(rx, ry) {
+    const S = 256, cv = document.createElement('canvas'); cv.width = cv.height = S;
+    const c2 = cv.getContext('2d'), img = c2.createImageData(S, S), d = img.data;
+    const f = n => 2 * Math.PI * n / S;
+    const Hf = (x, y) => Math.sin(x * f(4)) + 0.9 * Math.sin(y * f(5)) + 0.7 * Math.sin((x + y) * f(3)) + 0.5 * Math.sin((x - y) * f(7));
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const hL = Hf((x - 1 + S) % S, y), hR = Hf((x + 1) % S, y), hD = Hf(x, (y - 1 + S) % S), hU = Hf(x, (y + 1) % S);
+      let nx = hL - hR, ny = hD - hU; const nz = 3.0, L = Math.hypot(nx, ny, nz) || 1;
+      const i = (y * S + x) * 4;
+      d[i] = (nx / L * 0.5 + 0.5) * 255; d[i + 1] = (ny / L * 0.5 + 0.5) * 255; d[i + 2] = (nz / L * 0.5 + 0.5) * 255; d[i + 3] = 255;
+    }
+    c2.putImageData(img, 0, 0);
+    const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx || 12, ry || 12);
+    (window.__waterMats = window.__waterMats || []).push(t);
+    return t;
+  }
+
+  // ---------- Alignment constants ----------
+  // Two parallel tracks: eastbound (dir +1) runs on z = -TRACK_Z, westbound on z = +TRACK_Z.
+  const TRACK_Z   = 12.0;    // track centreline offset (opposite directions further apart)
+  const RAIL_HALF = 2.6;     // half gauge within one track (rails under the wings)
+  const HEAD_R    = 0.075;   // round rail head (patent cross-section)
+  const TRACK_H   = 22;
+  const CABLE_X   = 1200;    // cable-supported section |x| <= 1200
+  const SPAN      = 120;     // pylons exactly every 120 m (equal spans)
+  const P_STOP    = 1398;    // platform stop point (on the straight ±TRACK_Z alignment)
+  const TABLE_X   = 1455;    // turntable centre — set just behind the platform hall (which ends at ~1420)
+  const R_TABLE   = 6.0;     // small turntable: vehicle stops centred and rotates in place
+  const XC0       = 1420;    // approach curve starts right after the hall, so track is straight through the platform
+  const DELTA     = 30 * Math.PI / 180;          // half-angle between the two rim connections
+  const Z_RIM     = R_TABLE * Math.sin(DELTA);   // z of each track's rim connection (≈2.25, they do NOT meet)
+  const X_RIM     = TABLE_X - R_TABLE * Math.cos(DELTA); // x where each track meets the disc rim
+  const TURN      = Math.PI - 2 * DELTA;         // bridge rotation to swing from one track to the other
+  const DECK_TOP  = 6.5;     // station floor / estacade deck = rail head − 1.5
+
+  function trackY(x) {
+    const a = Math.abs(x);
+    if (a <= 1150) return TRACK_H;
+    if (a >= 1380) return 8;
+    const t = (a - 1150) / 230;
+    const s = t * t * (3 - 2 * t);
+    return TRACK_H - 14 * s;
+  }
+  function trackSlope(x) { return (trackY(x + 1) - trackY(x - 1)) / 2; }
+  // gentle horizontal alignment curve over the central cable section, eased to dead-straight before
+  // either station approach. Only the RAIL follows this (curveZ); the carrying cables run as straight
+  // chords pylon-to-pylon (curveChord) and the clamps take up the small lateral offset between them.
+  const CURVE_X = 540;                                            // curve confined to |x| < CURVE_X
+  const CURVE_A = 2 * CURVE_X * CURVE_X / (Math.PI * Math.PI * 3000); // peak offset → min radius ≈ 3000 m
+  function curveZ(x) {
+    if (Math.abs(x) >= CURVE_X) return 0;
+    const c = Math.cos(Math.PI * x / (2 * CURVE_X));
+    return CURVE_A * c * c;                                       // even; =A at centre, →0 (slope 0) at ±CURVE_X
+  }
+  function curveChord(x) {                                        // lateral z of the straight cable chord
+    const x0 = Math.floor(x / SPAN) * SPAN, x1 = x0 + SPAN, t = (x - x0) / SPAN;
+    return curveZ(x0) * (1 - t) + curveZ(x1) * t;                 // straight line between pylon attach points
+  }
+  // lateral offset (z) of track 'trk' (±1) at world x: gently curving cable section (±TRACK_Z + curveZ),
+  // then a Hermite curve to its own rim connection at ±Z_RIM. The two tracks never meet — the bridge
+  // rotates to bridge the gap, so there is no switch in front of the table.
+  function trackCZ(x, trk) {
+    const ax = Math.abs(x);
+    if (ax <= XC0) return trk * TRACK_Z + curveZ(x);
+    if (ax >= X_RIM) return trk * Z_RIM;
+    const L = X_RIM - XC0, s = (ax - XC0) / L;
+    const h00 = 2 * s ** 3 - 3 * s ** 2 + 1, h01 = -2 * s ** 3 + 3 * s ** 2, h11 = s ** 3 - s ** 2;
+    const m1 = L * (-Math.tan(DELTA));           // end slope d|z|/ds matches the bridge tangent
+    return trk * (h00 * TRACK_Z + h01 * Z_RIM + h11 * m1);
+  }
+  // heading (yaw) of a vehicle on track 'trk' moving with travel direction 'dir' (+1 = +x)
+  function trackYaw(x, trk, dir) {
+    // sample the tangent without crossing into the flat rim clamp (|x| > X_RIM); sampling across
+    // it would corrupt the slope and snap the heading at the bridge joint
+    const s = x < 0 ? -1 : 1, h = 0.5;
+    let xp = x + h, xm = x - h;
+    if (s > 0) { if (xp > X_RIM) { xp = X_RIM; xm = X_RIM - 2 * h; } }
+    else { if (xm < -X_RIM) { xm = -X_RIM; xp = -X_RIM + 2 * h; } }
+    const dzdx = (trackCZ(xp, trk) - trackCZ(xm, trk)) / (xp - xm);
+    return Math.atan2(dir, dir * dzdx);
+  }
+  const RAIL_ZS = [-TRACK_Z - RAIL_HALF, -TRACK_Z + RAIL_HALF, TRACK_Z - RAIL_HALF, TRACK_Z + RAIL_HALF];
+
+  // ---------- Terrain ----------
+  const WATER_Y = -3.0;
+  // a few small still lakes in the open fields (carved as bowls in terrainH, water discs added later)
+  const LAKES = [
+    { x: 770, z: -175, r: 72 }, { x: -880, z: 250, r: 96 },
+    { x: 1010, z: 430, r: 58 }, { x: -560, z: -430, r: 66 }
+  ];
+  // value noise + fractal sum for irregular (non-sinusoidal) terrain
+  function vhash(i, j) { const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return s - Math.floor(s); }
+  function vnoise(x, z) {
+    const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi;
+    const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+    const a = vhash(xi, zi), b = vhash(xi + 1, zi), c = vhash(xi, zi + 1), d = vhash(xi + 1, zi + 1);
+    return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;   // 0..1
+  }
+  function fbm(x, z) {
+    let s = 0, amp = 1, f = 1, norm = 0;
+    for (let o = 0; o < 4; o++) { s += amp * vnoise(x * f, z * f); norm += amp; amp *= 0.5; f *= 2.07; }
+    return (s / norm - 0.5) * 2;   // -1..1, irregular
+  }
+  // two car roads, each crossing under the line in a different span (run in z)
+  const ROADS = [
+    { x: 300, half: 11.5, lanes: 6, base: 6.0, ph: 0.5, z0: -1300, z1: 1300, amp: 2.0, sw: 0.014, cx: 90, cw: 0.0016, cph: 0.4 },
+    { x: -650, half: 8.0, lanes: 4, base: 5.0, ph: 2.1, z0: -1300, z1: 1300, amp: 1.6, sw: 0.018, cx: 62, cw: 0.0019, cph: 2.0 }
+  ];
+  // roads run long in z (ends off the visible terrain) and meander gently & smoothly in x (large-radius
+  // plan curves, R≈4000 m). roadX = plan centreline, roadXSlope = d(roadX)/dz for the ribbon/heading.
+  function roadX(rd, z) { return rd.x + rd.cx * Math.sin(z * rd.cw + rd.cph); }
+  function roadXSlope(rd, z) { return rd.cx * rd.cw * Math.cos(z * rd.cw + rd.cph); }
+  function roadY(rd, z) { return rd.base + rd.amp * Math.sin(z * rd.sw + rd.ph); }
+  function riverPath(z) { return -346 + 150 * Math.sin(z * 0.0038) + 55 * Math.sin(z * 0.011 + 1.0); }
+  function terrainH(x, z) {
+    // irregular rolling base (fractal noise) with steeper ranges to either side of the corridor
+    let h = 9.5 * fbm(x * 0.005 + 11, z * 0.005 - 5)
+          + 5.4 * fbm(x * 0.013 - 3, z * 0.015 + 7)
+          + 2.6 * fbm(x * 0.034 + 2, z * 0.032 - 4)
+          + 1.2 * fbm(x * 0.072, z * 0.068)
+          + 2.4 * Math.sin(x * 0.0032 + z * 0.0018) - 1;
+    const r = Math.abs(z);
+    if (r > 230) h += Math.min((r - 230) * 0.42, 175) * (0.7 + 0.45 * fbm(x * 0.01, z * 0.004));
+    // Rugged ground directly beneath the elevated line — deep ravines and rocky ridges, so the
+    // vehicle is seen spanning genuinely difficult terrain (the pylons simply grow taller over the
+    // gorges). Blended into the lowland over a band so there is no seam, and always kept clear of rails.
+    {
+      const tcor = Math.min(Math.max((r - 35) / 50, 0), 1);   // 0 in the corridor → 1 by r≈85
+      const cor = 1 - tcor * tcor * (3 - 2 * tcor);
+      if (cor > 0.001) {
+        let hc = 5.0
+          + 17.0 * fbm(x * 0.006 + 30, z * 0.02 + 10)    // big long-wavelength relief along the line
+          + 7.0  * fbm(x * 0.022 + 5, z * 0.05)          // medium ruggedness
+          + 3.0  * fbm(x * 0.065 + 12, z * 0.09);        // fine rock detail
+        const go = fbm(x * 0.0045 + 70, z * 0.01);       // slow field carves occasional deep gorges
+        if (go > 0.28) hc -= (go - 0.28) * 120;
+        hc = Math.min(hc, trackY(x) - 6);                // always clear of the rails
+        hc = Math.max(hc, WATER_Y - 2.0);                // valleys may drop to a gorge floor
+        h = h * (1 - cor) + hc * cor;
+      }
+    }
+    // Station / turntable / depot plateau — a flat pad the structures stand on. This must OVERRIDE the
+    // rugged corridor (otherwise the new deep ravines drop the ground out from under the station and the
+    // turntable/depot appear to float). Blended at the edges so it meets the surrounding terrain smoothly.
+    {
+      const ax = Math.abs(x), az = Math.abs(z);
+      const sx = Math.min(Math.max((ax - 1290) / 55, 0), 1);     // 0 before the station → 1 inside
+      const sz = 1 - Math.min(Math.max((az - 84) / 26, 0), 1);   // 1 within the footprint → 0 outside
+      const w = (sx * sx * (3 - 2 * sx)) * (sz * sz * (3 - 2 * sz));
+      if (w > 0.001) h = h * (1 - w) + 1.4 * w;
+    }
+    // grade the ground to the road level: a flat carriageway + verge, then a smooth
+    // embankment (fill) or cut down/up to the natural ground, tapering out at the road ends
+    for (const rd of ROADS) {
+      const flat = rd.half + 4, slope = 30, reach = flat + slope, rcx = roadX(rd, z);
+      if (x > rcx - reach && x < rcx + reach && z > rd.z0 - 34 && z < rd.z1 + 34) {
+        const ry = roadY(rd, z), dxr = Math.abs(x - rcx);
+        const tl = dxr <= flat ? 0 : Math.min(1, (dxr - flat) / slope);
+        const sl = tl * tl * (3 - 2 * tl);
+        const graded = ry * (1 - sl) + h * sl;          // flat top → embankment/cut → terrain
+        let gz = 1;                                      // taper the grading past the road ends
+        if (z < rd.z0) gz = 1 - Math.min(1, (rd.z0 - z) / 34);
+        else if (z > rd.z1) gz = 1 - Math.min(1, (z - rd.z1) / 34);
+        // don't carve deep canyons through tall hills — let the hill bury the road (hides the far ends)
+        let cut = 1;
+        if (h > ry + 16) cut = Math.max(0, 1 - (h - ry - 16) / 22);
+        let w = gz * cut; w = w * w * (3 - 2 * w);
+        h = graded * w + h * (1 - w);
+      }
+    }
+    // river valley — carved last so it cuts a channel through everything (incl. the corridor)
+    const d = Math.abs(x - riverPath(z));
+    if (d < 85) {
+      const t = d / 85, s = t * t * (3 - 2 * t);
+      const bed = WATER_Y - 2.4;
+      h = bed + (h - bed) * s;
+    }
+    // small lake bowls: depress to a bed below the water line at the centre, blending to terrain at the rim
+    for (const lk of LAKES) {
+      const dl = Math.hypot(x - lk.x, z - lk.z);
+      if (dl < lk.r) {
+        const t = dl / lk.r, s = t * t * (3 - 2 * t), bed = WATER_Y - 2.2;
+        h = Math.min(h, bed + (h - bed) * s);
+      }
+    }
+    return h;
+  }
+  // ---------- Procedural textures (canvas-generated, no external files needed) ----------
+  function canvasTex(w, h, draw, rep) {
+    if (typeof document === 'undefined' || typeof CanvasRenderingContext2D === 'undefined') return null;
+    try {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); if (!x || !x.fillRect) return null;
+      draw(x, w, h);
+      const t = new THREE.CanvasTexture(c);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (rep) t.repeat.set(rep[0], rep[1]);
+      t.anisotropy = 4; t.needsUpdate = true;
+      return t;
+    } catch (e) { return null; }
+  }
+  const _r = (a, b) => a + Math.random() * (b - a);
+  // brushed steel — fine vertical streaks; used as map + roughnessMap
+  const texSteel = canvasTex(256, 256, (x, w, h) => {
+    x.fillStyle = '#969ba2'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 1500; i++) { const c = Math.random() < 0.5 ? 255 : 45; x.strokeStyle = `rgba(${c},${c},${c},${_r(0.015, 0.06)})`; x.lineWidth = 1; x.beginPath(); const px = Math.random() * w; x.moveTo(px, 0); x.lineTo(px + _r(-3, 3), h); x.stroke(); }
+    for (let i = 0; i < 7; i++) { const v = Math.random() < 0.5 ? 255 : 35; x.fillStyle = `rgba(${v},${v},${v},0.05)`; x.fillRect(0, Math.random() * h, w, _r(2, 9)); }
+  }, [3, 3]);
+  // concrete — soft blotches + fine speckle; used as map + bumpMap
+  const texConc = canvasTex(256, 256, (x, w, h) => {
+    x.fillStyle = '#c0bdb4'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 44; i++) { const g = 150 + Math.random() * 55; x.fillStyle = `rgba(${g | 0},${g - 5 | 0},${g - 14 | 0},${_r(0.05, 0.18)})`; x.beginPath(); x.arc(Math.random() * w, Math.random() * h, _r(12, 58), 0, 7); x.fill(); }
+    for (let i = 0; i < 9000; i++) { const v = Math.random() < 0.5 ? 65 : 235; x.fillStyle = `rgba(${v},${v},${v},${_r(0.04, 0.13)})`; x.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+    for (let i = 0; i < 14; i++) { x.strokeStyle = `rgba(92,90,85,${_r(0.05, 0.12)})`; x.lineWidth = _r(0.5, 1.4); x.beginPath(); x.moveTo(Math.random() * w, Math.random() * h); x.lineTo(Math.random() * w, Math.random() * h); x.stroke(); }
+  }, [3, 3]);
+  // grass — HIGH-KEY (near white) so it multiplies over the terrain colours as subtle blade variation
+  // without washing the green to grey
+  const texGrass = canvasTex(512, 512, (x, w, h) => {
+    x.fillStyle = '#e7ebe0'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 24000; i++) {
+      const light = Math.random() < 0.5, g = light ? _r(224, 250) : _r(150, 196), rr = g - _r(8, 24), bb = g - _r(20, 46);
+      x.strokeStyle = `rgba(${rr | 0},${g | 0},${bb | 0},${_r(0.04, 0.14)})`; x.lineWidth = _r(0.6, 1.4);
+      const px = Math.random() * w, py = Math.random() * h, ln = _r(2, 7), an = _r(-0.5, 0.5);
+      x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.sin(an) * ln, py - Math.cos(an) * ln); x.stroke();
+    }
+    for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(172,156,98,${_r(0.04, 0.1)})`; x.beginPath(); x.arc(Math.random() * w, Math.random() * h, _r(2, 5), 0, 7); x.fill(); }
+  }, [70, 48]);
+  const texGrassBump = canvasTex(256, 256, (x, w, h) => {
+    x.fillStyle = '#808080'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 13000; i++) { const v = Math.random() < 0.5 ? _r(45, 110) : _r(150, 220); x.strokeStyle = `rgba(${v | 0},${v | 0},${v | 0},0.5)`; x.beginPath(); const px = Math.random() * w, py = Math.random() * h; x.moveTo(px, py); x.lineTo(px + _r(-1, 1), py - _r(2, 5)); x.stroke(); }
+  }, [70, 48]);
+
+  (function buildTerrain() {
+    const geo = new THREE.PlaneGeometry(4200, 3600, 280, 240);
+    geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position;
+    const colors = [];
+    const cWet  = new THREE.Color(0x5f8a3a), cGrass = new THREE.Color(0x539d3a),
+          cGras2 = new THREE.Color(0x77c64e), cRock = new THREE.Color(0x8b8475),
+          cSnow = new THREE.Color(0xeef2f4);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getZ(i);
+      const h = terrainH(x, z);
+      pos.setY(i, h);
+      const c = new THREE.Color();
+      if (h < WATER_Y + 1.2) c.copy(cWet).lerp(cGrass, Math.max(0, (h - WATER_Y + 1.2) / 2.4));
+      else if (h < 13) c.copy(cGrass).lerp(cGras2, (h - WATER_Y - 1.2) / 14);
+      else if (h < 30) c.copy(cGras2).lerp(cRock, (h - 13) / 17);
+      else c.copy(cRock).lerp(cSnow, Math.min((h - 30) / 34, 1));
+      // steep faces (ravine walls, ridges, cliffs) read as bare rock regardless of elevation
+      const slope = (Math.abs(terrainH(x + 4, z) - terrainH(x - 4, z)) +
+                     Math.abs(terrainH(x, z + 4) - terrainH(x, z - 4))) / 8;   // ~rise/run
+      c.lerp(cRock, Math.min(Math.max((slope - 0.22) / 0.7, 0), 0.82));
+      colors.push(c.r, c.g, c.b);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+    const terr = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.97, metalness: 0,
+      map: texGrass, bumpMap: texGrassBump, bumpScale: 0.6, envMapIntensity: 0.0
+    }));
+    terr.castShadow = true;
+    terr.receiveShadow = true;
+    scene.add(terr);
+
+    // winding river — reflective ribbon with scrolling ripple normals (mirrors the sky env map)
+    (function buildRiver() {
+      const seg = 210, z0 = -1120, z1 = 1120, hw = 24;
+      const verts = [], idx = [];
+      for (let i = 0; i <= seg; i++) {
+        const z = z0 + (z1 - z0) * i / seg, rx = riverPath(z);
+        const w = hw * Math.max(0.06, Math.min(1, Math.min(i, seg - i) / 12));   // taper to a point at the ends
+        verts.push(rx - w, WATER_Y, z, rx + w, WATER_Y, z);
+      }
+      for (let i = 0; i < seg; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      const rgeo = new THREE.BufferGeometry();
+      rgeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      rgeo.setIndex(idx); rgeo.computeVertexNormals();
+      const wmat = new THREE.MeshStandardMaterial({
+        color: 0x21506a, roughness: 0.10, metalness: 0.55,
+        normalMap: makeRippleNormal(10, 200), normalScale: new THREE.Vector2(0.4, 0.4),
+        envMapIntensity: 1.5, transparent: true, opacity: 0.9
+      });
+      const river = new THREE.Mesh(rgeo, wmat); river.receiveShadow = true; scene.add(river);
+    })();
+  })();
+
+  // ---------- Trees (procedural low-poly: broadleaf · oak · conifer · birch · poplar) ----------
+  // Foliage carries baked vertex AO + a sun-gradient (dark/cool at the shaded core, bright/warm on the
+  // sunlit crown) so the canopies read as volumes; lit as PBR against the sky env map; each instance is
+  // tinted slightly and the whole crown sways in a shared wind. One InstancedMesh per species.
+  (function buildTrees() {
+   try {
+    const windU = { value: 0 };
+    window.__windU = windU;                 // advanced once per frame in the main loop
+    const TRUNK = 0x5b4a36, TRUNK2 = 0x5e4a38, BIRCH = 0xd7d2c4;
+    const tmpC = new THREE.Color(), warm = new THREE.Color(0xead27a), cool = new THREE.Color(0x2b3f52);
+
+    // ---- detailed procedural trees: tapered leaning trunk + branches + clumped noisy canopy ----
+    const pick = arr => arr[(Math.random() * arr.length) | 0];
+    function limbGeo(from, to, r0, r1, seg) {                 // oriented tapered limb between two points
+      const a = new THREE.Vector3(from[0], from[1], from[2]), b = new THREE.Vector3(to[0], to[1], to[2]);
+      const dir = new THREE.Vector3().subVectors(b, a), len = Math.max(dir.length(), 0.001);
+      const g = new THREE.CylinderGeometry(Math.max(r1, 0.02), Math.max(r0, 0.02), len, seg || 5, 1);
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      g.applyMatrix4(new THREE.Matrix4().compose(a.addScaledVector(dir, 0.5), q, new THREE.Vector3(1, 1, 1)));
+      return g;
+    }
+    function cloudGeo(r, pos, detail, amt) {                  // irregular foliage clump (noise-displaced)
+      const g = new THREE.IcosahedronGeometry(r, detail || 1), p = g.attributes.position, v = new THREE.Vector3();
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i); const nn = v.clone().normalize();
+        const d = 1 + (amt || 0.24) * (0.5 * Math.sin(nn.x * 4.0 + 1.7) + 0.4 * Math.sin(nn.y * 3.3 + 0.6) + 0.4 * Math.sin(nn.z * 4.6 + 2.4) + 0.3 * (Math.random() - 0.5));
+        v.multiplyScalar(d); p.setXYZ(i, v.x + pos[0], v.y * 0.92 + pos[1], v.z + pos[2]);
+      }
+      return g;
+    }
+    // bake placed parts [{geo,color,fol}] into one vertex-coloured geometry (AO + warm/cool sun grading)
+    function bakeParts(parts) {
+      let total = 0, maxY = 0.001;
+      for (const pt of parts) { pt.geo.computeVertexNormals(); total += pt.geo.attributes.position.count;
+        const pa = pt.geo.attributes.position.array; for (let i = 1; i < pa.length; i += 3) if (pa[i] > maxY) maxY = pa[i]; }
+      const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3); let o = 0;
+      for (const pt of parts) {
+        const g = pt.geo, p = g.attributes.position.array, nn = g.attributes.normal.array, cnt = g.attributes.position.count;
+        const c0 = new THREE.Color(pt.color), fol = !!pt.fol; pos.set(p, o * 3); nor.set(nn, o * 3);
+        for (let i = 0; i < cnt; i++) {
+          const y = p[i * 3 + 1], ny = nn[i * 3 + 1], hT = Math.min(Math.max(y / maxY, 0), 1);
+          if (fol) {
+            const up = ny * 0.5 + 0.5, ao = 0.5 + 0.45 * hT + 0.22 * up;
+            tmpC.copy(c0).multiplyScalar(ao * (0.9 + 0.18 * Math.random()));
+            tmpC.lerp(cool, 0.16 * (1 - hT)); tmpC.lerp(warm, 0.10 * hT * up);
+          } else tmpC.copy(c0).multiplyScalar((0.72 + 0.34 * hT) * (0.88 + 0.22 * Math.random()));
+          col[(o + i) * 3] = tmpC.r; col[(o + i) * 3 + 1] = tmpC.g; col[(o + i) * 3 + 2] = tmpC.b;
+        }
+        o += cnt;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      geo.computeBoundingSphere(); return geo;
+    }
+
+    // species generators (return placed parts; broadleaf/oak share one, parametrised)
+    function makeBroadleaf(o) {
+      o = o || {}; const bark = o.bark || TRUNK, R = o.trunkR || 0.32, segs = o.segs || 3, segH = o.segH || 0.72;
+      const branches = o.branches || 3, crownR = o.crownR || 1.15, crowns = o.crowns || 2;
+      const greens = o.greens || [0x4f8235, 0x3f6b2c, 0x5d9040, 0x53883a, 0x60964a, 0x46772e];
+      const parts = [], G = () => pick(greens);
+      parts.push({ geo: limbGeo([0, -0.25, 0], [0, 0.5, 0], R * 1.5, R, 8), color: bark });   // root flare
+      let x = 0, z = 0, y = 0.4, lean = (Math.random() - 0.5) * 0.26, lz = (Math.random() - 0.5) * 0.18; const pts = [[0, 0.4, 0]];
+      for (let s = 0; s < segs; s++) { x += lean * segH + (Math.random() - 0.5) * 0.1; z += lz * segH + (Math.random() - 0.5) * 0.1; y += segH; pts.push([x, y, z]); }
+      for (let s = 0; s < pts.length - 1; s++) parts.push({ geo: limbGeo(pts[s], pts[s + 1], R * (1 - s / (segs + 2)), R * (1 - (s + 1) / (segs + 2)), 6), color: bark });
+      const top = pts[pts.length - 1], tips = [];
+      for (let i = 0; i < branches; i++) {
+        const fh = 1.3 + Math.random() * Math.max(0.2, top[1] - 1.4), bx = lean * fh, bz = lz * fh;
+        const a = Math.random() * 6.2832, out = crownR * (0.8 + Math.random() * 0.8), uph = 0.6 + Math.random() * 0.8;
+        const tip = [bx + Math.cos(a) * out, fh + uph, bz + Math.sin(a) * out];
+        parts.push({ geo: limbGeo([bx, fh, bz], tip, 0.10, 0.04, 4), color: bark }); tips.push(tip);
+      }
+      for (const t of tips) parts.push({ geo: cloudGeo(crownR * (0.8 + Math.random() * 0.4), [t[0], t[1] + 0.15, t[2]], 1, 0.26), color: G(), fol: 1 });
+      for (let i = 0; i < crowns; i++) { const a = Math.random() * 6.2832, rr = Math.random() * crownR * 0.8; parts.push({ geo: cloudGeo(crownR * (0.85 + Math.random() * 0.5), [top[0] + Math.cos(a) * rr, top[1] + Math.random() * 0.9, top[2] + Math.sin(a) * rr], 1, 0.24), color: G(), fol: 1 }); }
+      return parts;
+    }
+    const makeOak = () => makeBroadleaf({ trunkR: 0.46, segs: 3, segH: 0.62, branches: 5, crownR: 1.6, crowns: 3, greens: [0x52823a, 0x456f2b, 0x5f9442, 0x4a7a32] });
+    function makeConifer() {
+      const bark = 0x4f4030, parts = [], needle = [0x2f5a34, 0x274d2c, 0x366a3d, 0x2c5230];
+      parts.push({ geo: limbGeo([0, -0.25, 0], [0, 0.6, 0], 0.42, 0.28, 8), color: bark });
+      parts.push({ geo: limbGeo([0, 0.4, 0], [0.05, 5.0, 0], 0.24, 0.05, 6), color: bark });   // trunk through the crown
+      for (let i = 0; i < 6; i++) { const h = 1.0 + i * 0.6, a = Math.random() * 6.2832, out = Math.max(0.3, 1.6 - h * 0.22);
+        parts.push({ geo: limbGeo([0, h, 0], [Math.cos(a) * out, h - 0.2, Math.sin(a) * out], 0.05, 0.02, 4), color: bark }); }
+      for (const [rad, hh, yy] of [[1.85, 2.5, 1.4], [1.5, 2.3, 2.5], [1.15, 2.1, 3.5], [0.8, 1.9, 4.4]]) {
+        const g = new THREE.ConeGeometry(rad, hh, 9), p = g.attributes.position, v = new THREE.Vector3();
+        for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const rr = Math.hypot(v.x, v.z);
+          if (rr > 0.01) { const f = 1 + 0.12 * Math.sin(Math.atan2(v.z, v.x) * 6.0 + yy); v.x *= f; v.z *= f; } p.setXYZ(i, v.x, v.y + yy, v.z); }
+        parts.push({ geo: g, color: pick(needle), fol: 1 });
+      }
+      const sp = new THREE.ConeGeometry(0.4, 1.6, 8); sp.translate(0, 5.4, 0); parts.push({ geo: sp, color: 0x366a3d, fol: 1 });
+      return parts;
+    }
+    function makeBirch() {
+      const parts = [], greens = [0x77a64a, 0x6a9a40, 0x84b257, 0x70a046];
+      let x = 0, lean = (Math.random() - 0.5) * 0.18; const pts = [[0, 0, 0]];
+      for (let s = 0; s < 4; s++) { x += lean * 0.85 + (Math.random() - 0.5) * 0.07; pts.push([x, (s + 1) * 0.9, 0]); }
+      parts.push({ geo: limbGeo([0, -0.2, 0], [0, 0.3, 0], 0.18, 0.13, 7), color: BIRCH });
+      for (let s = 0; s < pts.length - 1; s++) parts.push({ geo: limbGeo(pts[s], pts[s + 1], 0.13 * (1 - s / 6), 0.13 * (1 - (s + 1) / 6), 6), color: BIRCH });
+      const top = pts[pts.length - 1];
+      for (let i = 0; i < 5; i++) { const a = Math.random() * 6.2832, rr = Math.random() * 0.85; parts.push({ geo: cloudGeo(0.62 + Math.random() * 0.45, [top[0] + Math.cos(a) * rr, top[1] + Math.random() * 1.1, top[2] + Math.sin(a) * rr], 1, 0.3), color: pick(greens), fol: 1 }); }
+      return parts;
+    }
+    function makePoplar() {
+      const parts = [], greens = [0x4a7d34, 0x3f6e2c, 0x568a3c, 0x46772e];
+      parts.push({ geo: limbGeo([0, -0.2, 0], [0, 0.4, 0], 0.26, 0.18, 7), color: TRUNK2 });
+      parts.push({ geo: limbGeo([0, 0.3, 0], [0.04, 4.2, 0], 0.17, 0.05, 6), color: TRUNK2 });
+      for (let i = 0; i < 5; i++) {
+        const c = cloudGeo(0.8 - i * 0.06, [0, 0, 0], 1, 0.22);
+        c.scale(0.8, 1.5, 0.8); c.translate((Math.random() - 0.5) * 0.2, 2.0 + i * 0.95, (Math.random() - 0.5) * 0.2);
+        parts.push({ geo: c, color: pick(greens), fol: 1 });
+      }
+      return parts;
+    }
+
+    // bake a few variants per species class (0 broadleaf, 1 oak, 2 conifer, 3 birch, 4 poplar) and instance them
+    const variants = [], siVariants = [[], [], [], [], []];
+    function addVariants(si, makeFn, k) { for (let i = 0; i < k; i++) { siVariants[si].push(variants.length); variants.push(bakeParts(makeFn())); } }
+    addVariants(0, makeBroadleaf, 3); addVariants(1, makeOak, 2); addVariants(2, makeConifer, 3); addVariants(3, makeBirch, 2); addVariants(4, makePoplar, 2);
+
+    // PBR foliage lit by the sky env map; gentle shared wind sway injected into the vertex stage.
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0.0 });
+    // wind injector kept as a standalone fn so it can be chained AFTER CSM's onBeforeCompile (CSM only
+    // adds uniforms, so the two compose cleanly); used directly when CSM is absent.
+    const windInject = (sh) => {
+      sh.uniforms.uTime = windU;
+      sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader;
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>',
+        '#include <begin_vertex>\n' +
+        '  float wW = clamp((position.y - 1.0) / 4.5, 0.0, 1.0);\n' +
+        '#ifdef USE_INSTANCING\n' +
+        '  float wph = instanceMatrix[3].x * 0.30 + instanceMatrix[3].z * 0.22;\n' +
+        '#else\n  float wph = 0.0;\n#endif\n' +
+        '  float ws = sin(uTime * 1.2 + wph) + 0.35 * sin(uTime * 2.6 + wph * 1.7);\n' +
+        '  transformed.x += ws * wW * 0.16;\n' +
+        '  transformed.z += cos(uTime * 1.05 + wph) * wW * 0.11;\n');
+    };
+    mat.userData.windInject = windInject;        // CSM setup chains this; harmless otherwise
+    mat.onBeforeCompile = windInject;            // active directly when CSM is not used
+    mat.customProgramCacheKey = () => 'cgTreeWind';
+
+    // collect valid placements first, then assign a variant within each species class
+    const n = 1100, slots = []; let tries = 0;
+    while (slots.length < n && tries < 30000) {
+      tries++;
+      const x = (Math.random() - 0.5) * 3700, z = (Math.random() - 0.5) * 2600;
+      if (Math.abs(z) < 26 && Math.abs(x) < TABLE_X + 60) continue;
+      if (Math.abs(x) > 1320 && Math.abs(z) < 75) continue;
+      if (Math.abs(x - riverPath(z)) < 55) continue;
+      if (ROADS.some(rd => Math.abs(x - roadX(rd, z)) < rd.half + 16 && z > rd.z0 - 20 && z < rd.z1 + 20)) continue;
+      const h = terrainH(x, z);
+      if (h < WATER_Y + 0.5 || h > 30) continue;
+      // species mix varies with elevation: conifers climb higher, broadleaf/oak in the lowlands
+      const r = Math.random(), hi = h > 18;
+      let si;
+      if (hi) si = r < 0.6 ? 2 : r < 0.8 ? 0 : 3;
+      else si = r < 0.34 ? 0 : r < 0.58 ? 1 : r < 0.72 ? 2 : r < 0.87 ? 3 : 4;
+      const vi = siVariants[si][(Math.random() * siVariants[si].length) | 0];
+      slots.push({ x, h, z, sc: 0.62 + Math.random() * 1.2, yaw: Math.random() * Math.PI * 2, vi });
+    }
+    const counts = new Array(variants.length).fill(0);
+    for (const s of slots) counts[s.vi]++;
+    const meshes = variants.map((g, i) => {
+      const im = new THREE.InstancedMesh(g, mat, Math.max(1, counts[i]));
+      im.castShadow = true; im.count = counts[i];
+      im.frustumCulled = false;        // instances span the whole map; cull by instance, not as one blob
+      im.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      return im;
+    });
+    const idx = new Array(variants.length).fill(0);
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), tint = new THREE.Color();
+    for (const s of slots) {
+      q.setFromAxisAngle(up, s.yaw);
+      m.compose(new THREE.Vector3(s.x, s.h, s.z), q,
+        new THREE.Vector3(s.sc, s.sc * (0.9 + Math.random() * 0.35), s.sc));
+      const im = meshes[s.vi], k = idx[s.vi]++;
+      im.setMatrixAt(k, m);
+      // per-instance tint: subtle lightness + warm/olive variation so the forest isn't a flat green
+      const l = 0.82 + Math.random() * 0.34;
+      tint.setRGB(l * (0.95 + 0.12 * Math.random()), l, l * (0.88 + 0.08 * Math.random()));
+      im.setColorAt(k, tint);
+    }
+    meshes.forEach(im => {
+      im.instanceMatrix.needsUpdate = true;
+      if (im.instanceColor) im.instanceColor.needsUpdate = true;
+      scene.add(im);
+    });
+   } catch (e) {
+    console.warn('Tree build skipped:', e.message);
+   }
+  })();
+
+  // ---------- Wildflowers (colourful dots on the grass) ----------
+  (function buildFlowers() {
+    const n = 1500;
+    const fl = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.34, 6, 5),
+      new THREE.MeshStandardMaterial({ vertexColors: false }), n);
+    const palette = [0xffffff, 0xf2d34a, 0xe5573f, 0xc25fb0, 0xf29bbf, 0xffb43d, 0x8e7bd8];
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(1, 1, 1);
+    const col = new THREE.Color();
+    let k = 0, tries = 0;
+    while (k < n && tries < 20000) {
+      tries++;
+      const x = (Math.random() - 0.5) * 3100, z = (Math.random() - 0.5) * 900;
+      if (Math.abs(z) < 24 && Math.abs(x) < TABLE_X + 60) continue;
+      if (Math.abs(x) > 1320 && Math.abs(z) < 80) continue;
+      if (Math.abs(x - riverPath(z)) < 50) continue;
+      if (ROADS.some(rd => Math.abs(x - roadX(rd, z)) < rd.half + 14 && z > rd.z0 - 18 && z < rd.z1 + 18)) continue;
+      const h = terrainH(x, z);
+      if (h < WATER_Y + 0.8 || h > 16) continue;
+      m.compose(new THREE.Vector3(x, h + 0.18, z), q, s);
+      fl.setMatrixAt(k, m);
+      fl.setColorAt(k, col.setHex(palette[(Math.random() * palette.length) | 0]));
+      k++;
+    }
+    fl.count = k;
+    if (fl.instanceColor) fl.instanceColor.needsUpdate = true;
+    scene.add(fl);
+  })();
+
+  // ---------- Rocks, farm fences, lake water ----------
+  (function buildRocks() {
+    const geo = new THREE.IcosahedronGeometry(1, 0);            // faceted boulder, vertices jittered
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const f = 0.74 + Math.random() * 0.5; p.setXYZ(i, p.getX(i) * f, p.getY(i) * 0.72 * f, p.getZ(i) * f); }
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x8d877b });
+    const slots = []; let tries = 0;
+    while (slots.length < 240 && tries < 16000) {
+      tries++;
+      const x = (Math.random() - 0.5) * 3700, z = (Math.random() - 0.5) * 2600;
+      if (Math.abs(z) < 30 && Math.abs(x) < TABLE_X + 60) continue;
+      if (Math.abs(x) > 1320 && Math.abs(z) < 80) continue;
+      if (Math.abs(x - riverPath(z)) < 46) continue;
+      if (ROADS.some(rd => Math.abs(x - roadX(rd, z)) < rd.half + 12 && z > rd.z0 - 18 && z < rd.z1 + 18)) continue;
+      if (LAKES.some(lk => Math.hypot(x - lk.x, z - lk.z) < lk.r + 4)) continue;
+      const h = terrainH(x, z); if (h < WATER_Y + 0.3 || h > 42) continue;
+      slots.push({ x, h, z });
+    }
+    const im = new THREE.InstancedMesh(geo, mat, slots.length); im.castShadow = im.receiveShadow = true;
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    slots.forEach((s, k) => {
+      const sc = 0.5 + Math.random() * Math.random() * 3.6;       // mostly small, a few boulders
+      e.set(Math.random() * 0.5, Math.random() * 6.28, Math.random() * 0.5); q.setFromEuler(e);
+      m.compose(new THREE.Vector3(s.x, s.h + sc * 0.22, s.z), q,
+        new THREE.Vector3(sc * (0.8 + Math.random() * 0.5), sc * (0.6 + Math.random() * 0.4), sc * (0.8 + Math.random() * 0.5)));
+      im.setMatrixAt(k, m);
+    });
+    scene.add(im);
+  })();
+
+  (function buildFences() {
+    const postMat  = new THREE.MeshStandardMaterial({ color: 0x6f5d44 });
+    const railMatF = new THREE.MeshStandardMaterial({ color: 0x8c7b5e });
+    const runs = [                                               // field boundaries, clear of corridor/road/river
+      [350, 175, 980, 150], [980, 150, 1005, 360], [350, -175, 920, -150],
+      [-1180, 110, -640, 120], [-1180, -200, -700, -215], [470, 250, 470, 560],
+      [-980, 360, -560, 360]
+    ];
+    const posts = [], rails = [];
+    for (const [x0, z0, x1, z1] of runs) {
+      const dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz), nseg = Math.max(2, Math.round(L / 5));
+      for (let i = 0; i <= nseg; i++) { const t = i / nseg, x = x0 + dx * t, z = z0 + dz * t; posts.push({ x, z, h: terrainH(x, z) }); }
+      for (let i = 0; i < nseg; i++) {
+        const t0 = i / nseg, t1 = (i + 1) / nseg;
+        const xa = x0 + dx * t0, za = z0 + dz * t0, ha = terrainH(xa, za);
+        const xb = x0 + dx * t1, zb = z0 + dz * t1, hb = terrainH(xb, zb);
+        const len = Math.hypot(xb - xa, zb - za), ang = Math.atan2(-(zb - za), (xb - xa));
+        for (const yo of [0.5, 1.0]) rails.push({ x: (xa + xb) / 2, y: (ha + hb) / 2 + yo, z: (za + zb) / 2, len, ang });
+      }
+    }
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s1 = new THREE.Vector3(1, 1, 1), up = new THREE.Vector3(0, 1, 0);
+    const pim = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 1.2, 0.1), postMat, posts.length); pim.castShadow = true;
+    posts.forEach((pt, k) => { m.compose(new THREE.Vector3(pt.x, pt.h + 0.55, pt.z), q, s1); pim.setMatrixAt(k, m); });
+    scene.add(pim);
+    const rim = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.06, 0.05), railMatF, rails.length); rim.castShadow = true;
+    rails.forEach((r, k) => { q.setFromAxisAngle(up, r.ang); m.compose(new THREE.Vector3(r.x, r.y, r.z), q, new THREE.Vector3(r.len, 1, 1)); rim.setMatrixAt(k, m); });
+    scene.add(rim);
+  })();
+
+  (function buildLakeWater() {
+    const mat = new THREE.MeshStandardMaterial({ color: 0x244f64, roughness: 0.10, metalness: 0.5, normalMap: makeRippleNormal(8, 8), normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.92, envMapIntensity: 1.5 });
+    for (const lk of LAKES) {
+      const g = new THREE.CircleGeometry(lk.r * 0.9, 44); g.rotateX(-Math.PI / 2);
+      const m = new THREE.Mesh(g, mat); m.position.set(lk.x, WATER_Y + 0.05, lk.z); m.receiveShadow = true;
+      scene.add(m);
+    }
+  })();
+
+  const railMat   = new THREE.MeshStandardMaterial({ color: 0x55534d, roughness: 0.55, metalness: 0.55, envMapIntensity: 0.6 });   // satin → soft sheen, no sharp specular streak
+  const cableMat  = new THREE.MeshStandardMaterial({ color: 0x2c2c2a, roughness: 0.7, metalness: 0.4, envMapIntensity: 0.45 });    // locked-coil rope reads matte
+  const redMat    = new THREE.MeshStandardMaterial({ color: 0xd85a30, roughness: 0.5 });
+  const pylonMat  = new THREE.MeshStandardMaterial({ color: 0x9398a0, roughness: 0.5, metalness: 0.82, map: texSteel, roughnessMap: texSteel, envMapIntensity: 0.5 });
+  const concMat   = new THREE.MeshStandardMaterial({ color: 0xc2bfb6, roughness: 0.92, map: texConc, bumpMap: texConc, bumpScale: 0.4, envMapIntensity: 0.12 });
+  const concDark  = new THREE.MeshStandardMaterial({ color: 0xa6a39a, roughness: 0.92, map: texConc, bumpMap: texConc, bumpScale: 0.4, envMapIntensity: 0.12 });
+  const steelRoofMat = new THREE.MeshStandardMaterial({ color: 0xbcc0c4, roughness: 0.55, metalness: 0.8, roughnessMap: texSteel, envMapIntensity: 0.5 });
+  const whiteMat  = new THREE.MeshStandardMaterial({ color: 0xe9e7e0, roughness: 0.52, metalness: 0.04, envMapIntensity: 0.12 });
+  const wingMat   = new THREE.MeshStandardMaterial({ color: 0x9aa1a6, roughness: 0.5, metalness: 0.15, envMapIntensity: 0.2 });
+  const darkMat   = new THREE.MeshStandardMaterial({ color: 0x23282c, roughness: 0.3, metalness: 0.5 });
+  const steelMat  = new THREE.MeshStandardMaterial({ color: 0x9aa0a4, roughness: 0.45, metalness: 0.7, envMapIntensity: 0.6 });
+  const steelDark = new THREE.MeshStandardMaterial({ color: 0x6f757a, roughness: 0.5, metalness: 0.65, envMapIntensity: 0.55 });
+  const glassMat  = new THREE.MeshStandardMaterial({ color: 0x4a6a84, roughness: 0.15, metalness: 0.55, transparent: true, opacity: 0.55, envMapIntensity: 1.35 });
+  const yellowMat = new THREE.MeshStandardMaterial({ color: 0xe8b73a, roughness: 0.6 });
+  const lightMat  = new THREE.MeshBasicMaterial({ color: 0xfff4dc });
+  const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x3b3d40, roughness: 0.9 });
+  const lineMat   = new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.7 });
+
+  function strut(p1, p2, r1, r2, mat, shadow) {
+    const dir = new THREE.Vector3().subVectors(p2, p1);
+    const len = dir.length();
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, Math.max(len, 0.01), 10), mat);
+    mesh.position.copy(p1).addScaledVector(dir, 0.5);
+    if (len > 1e-6) mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    if (shadow) mesh.castShadow = true;
+    return mesh;
+  }
+  function roundedBoxGeo(w, h, d, r) {
+    const bevel = Math.max(0.001, Math.min(r, d / 2 - 0.002, w / 2 - 0.01, h / 2 - 0.01));
+    const w2 = w / 2 - bevel, h2 = h / 2 - bevel;          // shrink so the bevel expands back to w,h
+    const rr = Math.max(0.001, Math.min(r, w2 - 0.001, h2 - 0.001));
+    const sh = new THREE.Shape();
+    sh.moveTo(-w2 + rr, -h2);
+    sh.lineTo(w2 - rr, -h2);
+    sh.quadraticCurveTo(w2, -h2, w2, -h2 + rr);
+    sh.lineTo(w2, h2 - rr);
+    sh.quadraticCurveTo(w2, h2, w2 - rr, h2);
+    sh.lineTo(-w2 + rr, h2);
+    sh.quadraticCurveTo(-w2, h2, -w2, h2 - rr);
+    sh.lineTo(-w2, -h2 + rr);
+    sh.quadraticCurveTo(-w2, -h2, -w2 + rr, -h2);
+    const geo = new THREE.ExtrudeGeometry(sh, {
+      depth: d - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel,
+      bevelSegments: 1, steps: 1, curveSegments: 2
+    });
+    geo.translate(0, 0, -(d / 2 - bevel));
+    geo.computeVertexNormals();
+    return geo;
+  }
+  function box(w, h, d, mat, x, y, z, parent, shadow) {
+    const md = Math.min(w, h, d);
+    const geo = md > 0.14 ? roundedBoxGeo(w, h, d, Math.min(md * 0.4, 0.16))
+                          : new THREE.BoxGeometry(w, h, d);
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    if (shadow) m.castShadow = true;
+    (parent || scene).add(m);
+    return m;
+  }
+
+  // ---------- Car roads crossing under the line (different spans) ----------
+  (function buildRoads() {
+    for (const rd of ROADS) {
+      const seg = 240, verts = [], idx = [];
+      for (let i = 0; i <= seg; i++) {
+        const z = rd.z0 + (rd.z1 - rd.z0) * i / seg, y = roadY(rd, z) + 0.08;
+        const cxz = roadX(rd, z), sx = roadXSlope(rd, z), nrm = Math.hypot(1, sx);
+        const ex = rd.half / nrm, ez = -rd.half * sx / nrm;       // perpendicular → constant width on the curve
+        verts.push(cxz - ex, y, z - ez, cxz + ex, y, z + ez);
+      }
+      for (let i = 0; i < seg; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      const road = new THREE.Mesh(g, asphaltMat);
+      road.receiveShadow = true;
+      scene.add(road);
+
+      // road markings as instanced dashes (3 instanced meshes per road) — keeps draw calls low
+      const laneW = (rd.half - 1.0) * 2 / rd.lanes;     // lane width (leaving ~1 m shoulders)
+      const MK0 = Math.max(rd.z0 + 1, -240), MK1 = Math.min(rd.z1, 240);   // mark the visible central stretch
+      const dashes = { c: [], d: [], e: [] };
+      const add = (key, latOff, z) => {
+        if (Math.abs(z) < 32) return;     // no markings where the road passes under the guideway corridor (z≈0)
+        const sx = roadXSlope(rd, z), nrm = Math.hypot(1, sx), ex = 1 / nrm, ez = -sx / nrm;
+        dashes[key].push({ x: roadX(rd, z) + latOff * ex, y: roadY(rd, z) + 0.12, z: z + latOff * ez, ang: Math.atan2(sx, 1) });
+      };
+      // (no painted yellow centre line — it read as a yellow line where roads pass the guideway)
+      for (let k = 1; k < rd.lanes / 2; k++) for (const sgn of [-1, 1])
+        for (let z = MK0; z < MK1; z += 4.4) add('d', sgn * k * laneW, z);                   // lane dividers
+      for (const lx of [-rd.half + 0.6, rd.half - 0.6]) for (let z = MK0; z < MK1; z += 1.4)
+        add('e', lx, z);                                                                     // edge lines
+      const mkGeo = { c: new THREE.BoxGeometry(0.18, 0.02, 0.95), d: new THREE.BoxGeometry(0.14, 0.02, 1.8), e: new THREE.BoxGeometry(0.12, 0.02, 1.1) };
+      const mkMat = { c: yellowMat, d: lineMat, e: lineMat };
+      const mm = new THREE.Matrix4(), qq = new THREE.Quaternion(), upm = new THREE.Vector3(0, 1, 0), s1m = new THREE.Vector3(1, 1, 1);
+      for (const key of ['c', 'd', 'e']) {
+        const arr = dashes[key]; if (!arr.length) continue;
+        const im = new THREE.InstancedMesh(mkGeo[key], mkMat[key], arr.length);
+        arr.forEach((t, j) => { qq.setFromAxisAngle(upm, t.ang); mm.compose(new THREE.Vector3(t.x, t.y, t.z), qq, s1m); im.setMatrixAt(j, mm); });
+        scene.add(im);
+      }
+
+      // a few cars on the lanes
+      const carCols = [0xc24a3a, 0x3a5ac2, 0xe7e2d8, 0x4f9d57, 0xddc24a, 0x46474b];
+      const half = rd.lanes / 2;
+      const lanesX = [];
+      for (let k = 0; k < half; k++) { lanesX.push((k + 0.5) * laneW); lanesX.push(-(k + 0.5) * laneW); }
+      const spots = [-0.7, -0.25, 0.15, 0.55, 0.85];
+      spots.forEach((tz, i) => {
+        const lx = lanesX[i % lanesX.length];
+        const z = -160 + 320 * (tz * 0.5 + 0.5);
+        const sx = roadXSlope(rd, z), nrm = Math.hypot(1, sx), ex = 1 / nrm, ez = -sx / nrm;
+        const car = new THREE.Group();
+        car.position.set(roadX(rd, z) + lx * ex, roadY(rd, z) + 0.5, z + lx * ez);
+        car.rotation.y = Math.atan2(sx, 1);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: carCols[(i + rd.lanes) % carCols.length], roughness: 0.45, metalness: 0.2 });
+        box(2.0, 0.55, 4.4, bodyMat, 0, 0, 0, car, true);
+        box(1.7, 0.5, 2.2, bodyMat, 0, 0.5, -0.2, car, true);
+        box(1.55, 0.42, 2.0, darkMat, 0, 0.52, -0.2, car, false);
+        for (const wx of [-0.95, 0.95]) for (const wz of [-1.5, 1.5]) {
+          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.22, 18), darkMat);
+          wheel.rotation.z = Math.PI / 2;
+          wheel.position.set(wx, -0.28, wz);
+          car.add(wheel);
+        }
+        car.traverse(o => { if (o.isMesh) o.castShadow = true; });
+        scene.add(car);
+      });
+    }
+  })();
+
+  // ================= Richer environment: fields · hedges/shrubs · farmsteads · turbines · clouds · birds
+  // shared placement test: keep clear of the corridor, station zones, river, roads and lakes
+  function envFree(x, z, margin) {
+    margin = margin || 0;
+    if (Math.abs(z) < 26 + margin && Math.abs(x) < TABLE_X + 60) return false;
+    if (Math.abs(x) > 1320 && Math.abs(z) < 75 + margin) return false;
+    if (Math.abs(x - riverPath(z)) < 55 + margin) return false;
+    if (ROADS.some(rd => Math.abs(x - roadX(rd, z)) < rd.half + 16 + margin && z > rd.z0 - 20 && z < rd.z1 + 20)) return false;
+    if (LAKES.some(lk => Math.hypot(x - lk.x, z - lk.z) < lk.r + 6 + margin)) return false;
+    return true;
+  }
+
+  // ---- cultivated field patchwork: terrain-draped, furrowed, varied crops (one merged mesh) ----
+  (function buildFields() {
+   try {
+    // distinct crop types — each a main colour + a secondary furrow tone (soil / flower / stubble)
+    const CROPS = [
+      { a: 0xd8c46a, b: 0xe7d480, p: [2.0, 3.0] },   // ripe wheat — gold
+      { a: 0xcbb961, b: 0xb4a652, p: [2.0, 3.2] },   // barley — pale straw
+      { a: 0x6f9c3e, b: 0x82ad4d, p: [2.4, 3.6] },   // young cereal — fresh green
+      { a: 0x568f34, b: 0x4c8230, p: [3.0, 5.0] },   // pasture — deep green
+      { a: 0xf2d425, b: 0xd8be24, p: [2.2, 3.4] },   // rapeseed — bright yellow bloom
+      { a: 0x7d6bbf, b: 0x9a86c8, p: [1.6, 2.4] },   // lavender — purple rows
+      { a: 0x8aa6d8, b: 0xa3bce4, p: [1.8, 2.6] },   // flax — soft blue bloom
+      { a: 0xbe4636, b: 0x6f9c3e, p: [1.4, 2.2] },   // poppies — red over green
+      { a: 0xd9b62e, b: 0x6d8a39, p: [2.0, 3.0] },   // sunflowers — yellow heads / green
+      { a: 0x7a5b42, b: 0x6b4f3a, p: [1.6, 2.6] },   // ploughed — bare furrows
+      { a: 0x5a8f3a, b: 0x4d7e32, p: [2.2, 3.4] },   // maize — tall green
+      { a: 0xd6cf3e, b: 0xbfb836, p: [2.0, 3.0] },   // mustard — yellow-green
+      { a: 0xb6a86a, b: 0xc6b97a, p: [3.0, 5.0] },   // fallow — dry tan
+      { a: 0x4f8a3a, b: 0x609b48, p: [2.6, 4.0] },   // clover / alfalfa
+      { a: 0xc8743a, b: 0x8a6a45, p: [1.8, 2.8] },   // pumpkin / squash — orange-brown
+      { a: 0xc0392b, b: 0x9c2f24, p: [1.8, 2.6] },   // red tulips / flowering — vivid red
+      { a: 0xb43a46, b: 0x6f9c3e, p: [1.6, 2.4] },   // red clover — crimson over green
+      { a: 0xd1452f, b: 0xb83a28, p: [1.6, 2.4] },   // poppy field in full bloom — bright red
+    ];
+    const pos = [], nor = [], col = [], idx = [], tmp = new THREE.Color(), aC = new THREE.Color(), bC = new THREE.Color();
+    let base = 0, made = 0, tries = 0;
+    while (made < 58 && tries < 900) {
+      tries++;
+      const X = (Math.random() - 0.5) * 3300;
+      const Z = (Math.random() < 0.5 ? -1 : 1) * (55 + Math.random() * 210);
+      const w = 46 + Math.random() * 86, d = 40 + Math.random() * 80;
+      const ang = Math.random() * Math.PI, ca = Math.cos(ang), sa = Math.sin(ang);
+      if (!envFree(X, Z, 6)) continue;
+      let hmin = 1e9, hmax = -1e9, bad = false;
+      for (const sx of [-0.5, 0, 0.5]) for (const sz of [-0.5, 0, 0.5]) {
+        const px = X + sx * w * ca - sz * d * sa, pz = Z + sx * w * sa + sz * d * ca;
+        if (!envFree(px, pz, 2)) { bad = true; break; }
+        const h = terrainH(px, pz); if (h < WATER_Y + 0.8 || h > 26) { bad = true; break; }
+        hmin = Math.min(hmin, h); hmax = Math.max(hmax, h);
+      }
+      if (bad || hmax - hmin > 11) continue;
+      const crop = CROPS[(Math.random() * CROPS.length) | 0];
+      aC.setHex(crop.a); bC.setHex(crop.b);
+      const period = crop.p[0] + Math.random() * (crop.p[1] - crop.p[0]);
+      const xfreq = Math.PI * 2 / period, fieldL = 0.9 + Math.random() * 0.2;   // per-field brightness
+      const NX = Math.max(3, Math.round(w / 9)), NZ = Math.max(3, Math.round(d / 9)), start = base;
+      for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) {
+        const u = i / NX - 0.5, v = j / NZ - 0.5, lx = u * w, lz = v * d;
+        const px = X + lx * ca - lz * sa, pz = Z + lx * sa + lz * ca;
+        pos.push(px, terrainH(px, pz) + 0.06, pz); nor.push(0, 1, 0);
+        const s = 0.5 + 0.5 * Math.tanh(2.2 * Math.sin(lx * xfreq));            // sharpened furrow rows
+        tmp.copy(aC).lerp(bC, s);                                              // two-tone: crop ↔ soil/flower
+        const edge = (Math.abs(u) > 0.46 || Math.abs(v) > 0.46) ? 0.86 : 1.0;  // darker headland
+        tmp.multiplyScalar(fieldL * edge * (0.95 + Math.random() * 0.08));
+        col.push(tmp.r, tmp.g, tmp.b);
+      }
+      for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) {
+        const a = start + i * (NZ + 1) + j, b = start + (i + 1) * (NZ + 1) + j;
+        idx.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+      base += (NX + 1) * (NZ + 1); made++;
+    }
+    if (!pos.length) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 }));
+    m.receiveShadow = true; m.frustumCulled = false;
+    scene.add(m);
+   } catch (e) { console.warn('Fields skipped:', e.message); }
+  })();
+
+  // ---- shrubs (scattered) + hedgerows along field boundaries ----
+  (function buildShrubs() {
+   try {
+    const tmp = new THREE.Color();
+    function blob(parts) {
+      const baked = []; let total = 0, maxY = 0.001;
+      for (const p of parts) {
+        const g = new THREE.IcosahedronGeometry(p.r, 1);   // already non-indexed
+        g.scale(1, 0.72, 1); g.translate(p.x, p.y, p.z); g.computeVertexNormals();
+        baked.push({ g, c: new THREE.Color(p.col) }); total += g.attributes.position.count;
+        const pa = g.attributes.position.array; for (let i = 1; i < pa.length; i += 3) if (pa[i] > maxY) maxY = pa[i];
+      }
+      const P = new Float32Array(total * 3), N = new Float32Array(total * 3), C = new Float32Array(total * 3); let o = 0;
+      for (const b of baked) {
+        const a = b.g.attributes.position.array, nn = b.g.attributes.normal.array, c = b.g.attributes.position.count;
+        P.set(a, o * 3); N.set(nn, o * 3);
+        for (let i = 0; i < c; i++) {
+          const up = nn[i * 3 + 1] * 0.5 + 0.5, ao = 0.55 + 0.45 * Math.min(Math.max(a[i * 3 + 1] / maxY, 0), 1) + 0.2 * up;
+          tmp.copy(b.c).multiplyScalar(ao * (0.92 + 0.14 * Math.random()));
+          C[(o + i) * 3] = tmp.r; C[(o + i) * 3 + 1] = tmp.g; C[(o + i) * 3 + 2] = tmp.b;
+        }
+        o += c;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(C, 3));
+      geo.computeBoundingSphere(); return geo;
+    }
+    const bushGeo = blob([
+      { r: 0.95, x: 0, y: 0.7, z: 0, col: 0x4d7d33 }, { r: 0.7, x: 0.6, y: 0.55, z: 0.2, col: 0x5b8f3c },
+      { r: 0.66, x: -0.55, y: 0.6, z: -0.2, col: 0x456f2c }, { r: 0.6, x: 0.1, y: 1.1, z: 0, col: 0x568a3a }
+    ]);
+    const slots = []; let tries = 0;
+    while (slots.length < 600 && tries < 14000) {
+      tries++;
+      const x = (Math.random() - 0.5) * 3500, z = (Math.random() - 0.5) * 2200;
+      if (!envFree(x, z, 2)) continue; const h = terrainH(x, z); if (h < WATER_Y + 0.4 || h > 28) continue;
+      slots.push({ x, h, z, sc: 0.7 + Math.random() * 1.3, yaw: Math.random() * 6.28 });
+    }
+    const hedges = [[420, 150, 980, 165], [-1150, 120, -640, 135], [300, -150, 900, -165],
+                    [-980, 330, -560, 330], [520, 260, 540, 540], [1010, 150, 1030, 420]];
+    for (const [x0, z0, x1, z1] of hedges) {
+      const dx = x1 - x0, dz = z1 - z0, n = Math.round(Math.hypot(dx, dz) / 2.0);
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, x = x0 + dx * t, z = z0 + dz * t;
+        if (!envFree(x, z, 1)) continue; const h = terrainH(x, z); if (h < WATER_Y + 0.4 || h > 28) continue;
+        slots.push({ x, h, z, sc: 1.0 + Math.random() * 0.5, yaw: Math.atan2(dz, dx) });
+      }
+    }
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 });
+    const im = new THREE.InstancedMesh(bushGeo, mat, slots.length); im.castShadow = true; im.frustumCulled = false;
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+    slots.forEach((s, k) => {
+      q.setFromAxisAngle(up, s.yaw);
+      m.compose(new THREE.Vector3(s.x, s.h, s.z), q, new THREE.Vector3(s.sc, s.sc * (0.8 + Math.random() * 0.4), s.sc));
+      im.setMatrixAt(k, m);
+    });
+    im.instanceMatrix.needsUpdate = true; scene.add(im);
+   } catch (e) { console.warn('Shrubs skipped:', e.message); }
+  })();
+
+  // ---- farmsteads: house + barn + silos + shed, gable roofs ----
+  (function buildFarmsteads() {
+   try {
+    function gable(w, d, rh, mat, x, y, z, ry) {
+      const sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(0, rh); sh.lineTo(-w / 2, 0);
+      const g = new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: false }); g.translate(0, 0, -d / 2); g.computeVertexNormals();
+      const me = new THREE.Mesh(g, mat); me.position.set(x, y, z); me.rotation.y = ry || 0;
+      me.castShadow = me.receiveShadow = true; scene.add(me); return me;
+    }
+    const wall = new THREE.MeshStandardMaterial({ color: 0xe7e0d2, roughness: 0.85 });
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a4b34, roughness: 0.85 });
+    const roofR = new THREE.MeshStandardMaterial({ color: 0xa14a37, roughness: 0.8 });
+    const roofD = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.7, metalness: 0.3 });
+    const silo = new THREE.MeshStandardMaterial({ color: 0xc9ccce, roughness: 0.5, metalness: 0.6 });
+    function place(cx, cz, rot) {
+      const gy = terrainH(cx, cz), c = Math.cos(rot), s = Math.sin(rot);
+      const P = (lx, lz) => [cx + lx * c - lz * s, cz + lx * s + lz * c];
+      let p = P(0, 0);   box(9, 4.2, 7, wall, p[0], gy + 2.1, p[1], scene, true);  gable(9.4, 7.2, 2.6, roofR, p[0], gy + 4.2, p[1], rot);
+      p = P(-14, 4);     box(14, 5.6, 9, wood, p[0], gy + 2.8, p[1], scene, true);  gable(14.5, 9.3, 3.4, roofD, p[0], gy + 5.6, p[1], rot);
+      for (const off of [6.5, 9.6]) {
+        p = P(-22, off);
+        const sc = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 7, 18), silo); sc.position.set(p[0], gy + 3.5, p[1]); sc.castShadow = true; scene.add(sc);
+        const dm = new THREE.Mesh(new THREE.SphereGeometry(1.7, 16, 8, 0, 6.2832, 0, 1.2), silo); dm.position.set(p[0], gy + 7, p[1]); dm.castShadow = true; scene.add(dm);
+      }
+      p = P(9, -3);      box(5, 3, 4, wood, p[0], gy + 1.5, p[1], scene, true);     gable(5.3, 4.2, 1.4, roofR, p[0], gy + 3, p[1], rot);
+    }
+    for (const [x, z, r] of [[760, 180, 0.5], [-820, -210, 2.2], [1050, 360, -0.7]])
+      if (envFree(x, z, 30)) place(x, z, r);
+   } catch (e) { console.warn('Farmsteads skipped:', e.message); }
+  })();
+
+  // ---- wind turbines on the far hills (slowly rotating) ----
+  (function buildTurbines() {
+   try {
+    window.__turbines = window.__turbines || [];
+    const towerM = new THREE.MeshStandardMaterial({ color: 0xeef1f3, roughness: 0.6, metalness: 0.1 });
+    const bladeM = new THREE.MeshStandardMaterial({ color: 0xf4f6f7, roughness: 0.5, metalness: 0.05 });
+    for (const [x, z] of [[-1450, -360], [-1150, 430], [640, -560], [1180, -470], [-300, 600], [320, 560]]) {
+      if (!envFree(x, z, 10)) continue;
+      const gy = terrainH(x, z); if (gy < 22) continue;             // hilltops only
+      const H = 40 + Math.random() * 16;
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.7, H, 14), towerM);
+      tower.position.set(x, gy + H / 2, z); tower.castShadow = true; scene.add(tower);
+      const nac = new THREE.Group(); nac.position.set(x, gy + H, z); nac.rotation.y = Math.random() * 6.28; scene.add(nac);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.6, 1.8), towerM); body.castShadow = true; nac.add(body);
+      const rotor = new THREE.Group(); rotor.position.set(2.4, 0, 0); nac.add(rotor);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.8, 12), towerM); hub.rotation.z = Math.PI / 2; hub.castShadow = true; rotor.add(hub);
+      const R = H * 0.46;
+      for (let b = 0; b < 3; b++) {
+        const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.5, R, 8), bladeM);
+        blade.position.set(0, R / 2, 0); blade.scale.z = 0.35; blade.castShadow = true;
+        const bgp = new THREE.Group(); bgp.add(blade); bgp.rotation.x = b * 2.0944; rotor.add(bgp);
+      }
+      window.__turbines.push({ rotor, speed: 0.5 + Math.random() * 0.5 });
+    }
+   } catch (e) { console.warn('Turbines skipped:', e.message); }
+  })();
+
+  // ---- soft cumulus clouds high in the sky ----
+  (function buildClouds() {
+   try {
+    const tmp = new THREE.Color(), top = new THREE.Color(0xffffff), bot = new THREE.Color(0xbcc8d6);
+    function puff(n) {
+      const parts = [];
+      for (let i = 0; i < n; i++) parts.push({ r: 7 + Math.random() * 9, x: (Math.random() - 0.5) * 26, y: (Math.random() - 0.4) * 5, z: (Math.random() - 0.5) * 16 });
+      const baked = []; let total = 0, maxY = -1e9, minY = 1e9;
+      for (const p of parts) {
+        const g = new THREE.IcosahedronGeometry(p.r, 1); g.scale(1, 0.62, 1); g.translate(p.x, p.y, p.z); g.computeVertexNormals();
+        baked.push(g); total += g.attributes.position.count;
+        const pa = g.attributes.position.array; for (let i = 1; i < pa.length; i += 3) { if (pa[i] > maxY) maxY = pa[i]; if (pa[i] < minY) minY = pa[i]; }
+      }
+      const P = new Float32Array(total * 3), N = new Float32Array(total * 3), C = new Float32Array(total * 3); let o = 0;
+      for (const g of baked) {
+        const a = g.attributes.position.array, nn = g.attributes.normal.array, c = g.attributes.position.count; P.set(a, o * 3); N.set(nn, o * 3);
+        for (let i = 0; i < c; i++) { const tY = (a[i * 3 + 1] - minY) / Math.max(maxY - minY, 1); tmp.copy(bot).lerp(top, 0.3 + 0.7 * tY); C[(o + i) * 3] = tmp.r; C[(o + i) * 3 + 1] = tmp.g; C[(o + i) * 3 + 2] = tmp.b; }
+        o += c;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(C, 3));
+      geo.computeBoundingSphere(); return geo;
+    }
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+    for (let i = 0; i < 16; i++) {
+      const me = new THREE.Mesh(puff(5 + (i % 4)), mat);
+      me.position.set((Math.random() - 0.5) * 3200, 300 + Math.random() * 130, (Math.random() - 0.5) * 2600);
+      const s = 1 + Math.random() * 1.8; me.scale.set(s, s, s); me.frustumCulled = false; me.castShadow = false;
+      scene.add(me);
+    }
+   } catch (e) { console.warn('Clouds skipped:', e.message); }
+  })();
+
+  // ---- a few circling bird flocks ----
+  (function buildBirds() {
+   try {
+    window.__flocks = window.__flocks || [];
+    const v = new Float32Array([0, 0, -0.35, -0.75, 0.16, 0.05, 0, 0, 0,  0, 0, 0, 0.75, 0.16, 0.05, 0, 0, -0.35]);
+    const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(v, 3)); bg.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: 0.8, side: THREE.DoubleSide });
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+    for (const [cx, cz, by, n] of [[-200, 150, 55, 12], [600, -300, 62, 10], [-700, 400, 48, 11]]) {
+      const im = new THREE.InstancedMesh(bg, mat, n); im.frustumCulled = false; im.castShadow = false;
+      for (let k = 0; k < n; k++) {
+        const a = Math.random() * 6.28, r = 6 + Math.random() * 22;
+        q.setFromAxisAngle(up, a + 1.57);
+        m.compose(new THREE.Vector3(Math.cos(a) * r, (Math.random() - 0.5) * 6, Math.sin(a) * r), q, new THREE.Vector3(1.4, 1.4, 1.4));
+        im.setMatrixAt(k, m);
+      }
+      im.instanceMatrix.needsUpdate = true; im.position.set(cx, by, cz); scene.add(im);
+      window.__flocks.push({ mesh: im, baseY: by, speed: 0.12 + Math.random() * 0.08, phase: Math.random() * 6.28 });
+    }
+   } catch (e) { console.warn('Birds skipped:', e.message); }
+  })();
+
+  // ---------- Rails (round head, both tracks) ----------
+  function sagGap(x) {
+    const s = ((x % SPAN) + SPAN) % SPAN / SPAN;
+    return 0.42 + 0.6 * 4 * s * (1 - s);
+  }
+  for (const trk of [-1, 1]) {
+    for (const rs of [-RAIL_HALF, RAIL_HALF]) {
+      const rzStraight = trk * TRACK_Z + rs;     // z on the straight cable section
+      const pts = [];
+      const N = 900;
+      for (let i = 0; i <= N; i++) {
+        const x = -X_RIM + i * (2 * X_RIM / N);
+        const cz = trackCZ(x, trk);
+        const dzdx = trackCZ(x + 0.5, trk) - trackCZ(x - 0.5, trk);   // dz over 1 m
+        const inv = 1 / Math.hypot(1, dzdx);                          // perpendicular = (-dzdx, 1)·inv
+        pts.push(new THREE.Vector3(x - rs * dzdx * inv, trackY(x), cz + rs * inv));
+      }
+      const railMesh = new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 1100, HEAD_R, 8, false), railMat);
+      railMesh.castShadow = true;
+      scene.add(railMesh);
+      // continuous web under the head along the WHOLE length (cable section, descent AND estacades)
+      {
+        const WEBH = 0.26, HALF = 0.028, wpos = [], widx = [];
+        for (let i = 0; i <= N; i++) {
+          const x = -X_RIM + i * (2 * X_RIM / N);
+          const cz = trackCZ(x, trk);
+          const dzdx = trackCZ(x + 0.5, trk) - trackCZ(x - 0.5, trk);
+          const inv = 1 / Math.hypot(1, dzdx);
+          const cx = x - rs * dzdx * inv, czp = cz + rs * inv;     // rail centreline (matches the head)
+          const Lx = -dzdx * inv, Lz = inv;                         // horizontal lateral (perpendicular)
+          const yT = trackY(x) - HEAD_R, yB = yT - WEBH;
+          wpos.push(cx + Lx * HALF, yT, czp + Lz * HALF); wpos.push(cx - Lx * HALF, yT, czp - Lz * HALF);
+          wpos.push(cx + Lx * HALF, yB, czp + Lz * HALF); wpos.push(cx - Lx * HALF, yB, czp - Lz * HALF);
+          if (i > 0) {
+            const a = (i - 1) * 4, b = i * 4;
+            widx.push(a, b, b + 1, a, b + 1, a + 1);
+            widx.push(a + 2, a + 3, b + 3, a + 2, b + 3, b + 2);
+            widx.push(a, a + 2, b + 2, a, b + 2, b);
+            widx.push(a + 1, b + 1, b + 3, a + 1, b + 3, a + 3);
+          }
+        }
+        const wg = new THREE.BufferGeometry();
+        wg.setAttribute('position', new THREE.Float32BufferAttribute(wpos, 3));
+        wg.setIndex(widx); wg.computeVertexNormals();
+        const wm = new THREE.Mesh(wg, railMat); wm.castShadow = true; scene.add(wm);
+      }
+      // carrying cables (two per rail, cable section only) — straight chords pylon-to-pylon in plan
+      for (const lat of [-0.24, 0.24]) {
+        const cpts = [];
+        for (let x = -CABLE_X; x <= CABLE_X; x += 2.5)
+          cpts.push(new THREE.Vector3(x, trackY(x) - sagGap(x), rzStraight + lat + curveChord(x)));
+        const cableMesh = new THREE.Mesh(
+          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cpts), 1200, 0.05, 5, false), cableMat);
+        cableMesh.castShadow = true;
+        scene.add(cableMesh);
+      }
+    }
+  }
+
+  // ---------- Cable clamps (rail-to-cable connectors, every 8 m along all four rails) ----------
+  // The defining "clamp that cannot derail" detail. (They are red and were never the yellow line —
+  // that was a specular reflection, fixed via the satin metals + sun-free environment map.)
+  (function buildClamps() {
+    const xs = [];
+    for (let x = -CABLE_X + 4; x < CABLE_X - 2; x += 8) xs.push(x);
+    const nTot = xs.length * 4;
+    const hanger = new THREE.InstancedMesh(roundedBoxGeo(0.16, 1, 0.6, 0.07), redMat, nTot);
+    const collar = new THREE.InstancedMesh(roundedBoxGeo(0.42, 0.2, 0.34, 0.09), redMat, nTot);
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion();
+    const UP = new THREE.Vector3(0, 1, 0), q0 = new THREE.Quaternion();
+    let k = 0;
+    for (const rz of RAIL_ZS) for (const x of xs) {
+      const zRail = rz + curveZ(x), zCab = rz + curveChord(x);   // rail follows the curve, cable the chord
+      const top = trackY(x) - 0.22, bot = trackY(x) - sagGap(x);
+      const a = new THREE.Vector3(x, top, zRail), b = new THREE.Vector3(x, bot, zCab);
+      const dir = b.clone().sub(a), len = dir.length();
+      q.setFromUnitVectors(UP, dir.clone().normalize());          // tilt the hanger to bridge the offset
+      m.compose(a.clone().add(b).multiplyScalar(0.5), q, new THREE.Vector3(1, len, 1));
+      hanger.setMatrixAt(k, m);
+      m.compose(new THREE.Vector3(x, trackY(x) - 0.14, zRail), q0, new THREE.Vector3(1, 1, 1));
+      collar.setMatrixAt(k, m);
+      k++;
+    }
+    scene.add(hanger, collar);
+  })();
+
+  // ---------- Pylons every 100 m (separate pylon per track) ----------
+  for (let x = -CABLE_X; x <= CABLE_X; x += SPAN) {
+    const yRail = trackY(x);
+    for (const tz0 of [-TRACK_Z, TRACK_Z]) {
+      const tz = tz0 + curveZ(x);                 // pylon sits under the curved rail
+      const base = new THREE.Vector3(x, terrainH(x, tz) - 1.2, tz);
+      const head = new THREE.Vector3(x, yRail - 2.4, tz);
+      scene.add(strut(base, head, 0.66, 0.46, pylonMat, true));
+      const arm = box(1.1, 0.55, 2 * RAIL_HALF + 1.6, pylonMat, x, yRail - 2.4, tz, scene, true);
+      arm.castShadow = true;
+      for (const rz of [tz - RAIL_HALF, tz + RAIL_HALF]) {
+        scene.add(strut(new THREE.Vector3(x, yRail - 2.15, rz),
+                        new THREE.Vector3(x, yRail - 0.62, rz), 0.2, 0.16, pylonMat, false));
+        box(0.7, 0.2, 0.9, pylonMat, x, yRail - 0.52, rz, scene, false);
+      }
+    }
+  }
+
+  // ---------- Anchor abutments at the ends of the cable section ----------
+  // a portal (column under each track + top beam + low sill) with a large central opening,
+  // instead of one solid block — thinner and lighter
+  for (const side of [-1, 1]) {
+    const xa = side * CABLE_X;
+    const gy = terrainH(xa, 0);
+    const top = trackY(xa) - 1.7;
+    const blockH = top - gy;
+    const cxB = xa + side * 3;     // depth 6 m (thinner than the old 10 m), set just inside the cable end
+    const L = 6;
+    const zOpen = 7;              // half-width of the central opening (the empty gap between tracks)
+    const zOut = 16;             // outer edge (covers each track deck)
+    const lintel = 3.0, sill = 1.6;
+    for (const sz of [-1, 1]) {                       // a column under each track
+      const w = zOut - zOpen;
+      box(L, blockH, w, concMat, cxB, gy + blockH / 2, sz * (zOpen + w / 2), scene, true);
+    }
+    box(L, lintel, 2 * zOpen, concMat, cxB, top - lintel / 2, 0, scene, true);   // top beam over the opening
+    box(L, sill, 2 * zOpen, concMat, cxB, gy + sill / 2, 0, scene, true);        // low sill at the base
+    for (const rz of RAIL_ZS) for (const lat of [-0.24, 0.24])
+      scene.add(strut(
+        new THREE.Vector3(xa, trackY(xa) - 0.55, rz + lat),
+        new THREE.Vector3(xa + side * 8.4, trackY(xa) - 2.0, rz + lat * 3), 0.05, 0.05, cableMat, false));
+  }
+
+  // ---------- Estacades: a smooth swept deck + piers per direction, following slope & curve ----------
+  const DECK_W = 2 * RAIL_HALF + 2.6;     // each deck just wide enough for its own track
+  const deckMat = concMat.clone(); deckMat.side = THREE.DoubleSide;
+  const wallMat = concDark.clone(); wallMat.side = THREE.DoubleSide;
+  // one continuous deck ribbon for track 'trk' on the given end, from xA to xB (positive x's)
+  function sweepDeck(side, trk, xA, xB, width, half) {
+    const N = Math.max(2, Math.round((xB - xA) / 3));
+    const pos = [], idx = [];
+    for (let i = 0; i <= N; i++) {
+      const x = xA + (xB - xA) * i / N;
+      const wx = side * x, y = trackY(x) - 2.0, z = trackCZ(wx, trk);
+      const dxw = side * 1.0;
+      const dzw = trackCZ(side * (x + 0.5), trk) - trackCZ(side * (x - 0.5), trk);
+      const len = Math.hypot(dxw, dzw) || 1;
+      const Lx = dzw / len, Lz = -dxw / len;         // horizontal lateral (perpendicular to tangent)
+      pos.push(wx + Lx * width / 2, y + half, z + Lz * width / 2);
+      pos.push(wx - Lx * width / 2, y + half, z - Lz * width / 2);
+      pos.push(wx + Lx * width / 2, y - half, z + Lz * width / 2);
+      pos.push(wx - Lx * width / 2, y - half, z - Lz * width / 2);
+      if (i > 0) {
+        const a = (i - 1) * 4, b = i * 4;
+        idx.push(a, b, b + 1, a, b + 1, a + 1);          // top
+        idx.push(a + 2, a + 3, b + 3, a + 2, b + 3, b + 2); // bottom
+        idx.push(a, a + 2, b + 2, a, b + 2, b);          // outer side
+        idx.push(a + 1, b + 1, b + 3, a + 1, b + 3, a + 3); // inner side
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, deckMat);
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+  }
+  // one continuous, smooth plinth wall carrying a single rail along the curve
+  function sweepWall(side, trk, rs, xA, xB, width) {
+    const N = Math.max(2, Math.round((xB - xA) / 3));
+    const pos = [], idx = [];
+    for (let i = 0; i <= N; i++) {
+      const x = xA + (xB - xA) * i / N;
+      const wx = side * x, cz = trackCZ(wx, trk);
+      const yT = trackY(x) - HEAD_R, yB = yT - 1.42;
+      const dxw = side * 1.0, dzw = trackCZ(side * (x + 0.5), trk) - trackCZ(side * (x - 0.5), trk);
+      const len = Math.hypot(dxw, dzw) || 1, Lx = dzw / len, Lz = -dxw / len;
+      const cxp = wx + rs * Lx, czp = cz + rs * Lz;     // rail centre, offset perpendicular to tangent
+      pos.push(cxp + Lx * width / 2, yT, czp + Lz * width / 2);
+      pos.push(cxp - Lx * width / 2, yT, czp - Lz * width / 2);
+      pos.push(cxp + Lx * width / 2, yB, czp + Lz * width / 2);
+      pos.push(cxp - Lx * width / 2, yB, czp - Lz * width / 2);
+      if (i > 0) {
+        const a = (i - 1) * 4, b = i * 4;
+        idx.push(a, b, b + 1, a, b + 1, a + 1);
+        idx.push(a + 2, a + 3, b + 3, a + 2, b + 3, b + 2);
+        idx.push(a, a + 2, b + 2, a, b + 2, b);
+        idx.push(a + 1, b + 1, b + 3, a + 1, b + 3, a + 3);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, wallMat); m.castShadow = m.receiveShadow = true; scene.add(m);
+  }
+  // throat fill between the two converging decks: at each x it spans exactly between their inner
+  // edges (curve-following), so the wedge is closed with no overhang and no open gap to the rim
+  function sweepSlab(side, xA, xB) {
+    const N = Math.max(2, Math.round((xB - xA) / 2));
+    const pos = [], idx = [];
+    for (let i = 0; i <= N; i++) {
+      const f = i / N, x = xA + (xB - xA) * f, wx = side * x, y = trackY(x) - 2.0;
+      const hw = Math.max(trackCZ(wx, 1) - DECK_W / 2 + 0.3, 0.2);
+      pos.push(wx, y + 0.46, hw); pos.push(wx, y + 0.46, -hw);
+      pos.push(wx, y - 0.5, hw); pos.push(wx, y - 0.5, -hw);
+      if (i > 0) {
+        const a = (i - 1) * 4, b = i * 4;
+        idx.push(a, b, b + 1, a, b + 1, a + 1);
+        idx.push(a + 2, a + 3, b + 3, a + 2, b + 3, b + 2);
+        idx.push(a, a + 2, b + 2, a, b + 2, b);
+        idx.push(a + 1, b + 1, b + 3, a + 1, b + 3, a + 3);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, deckMat); m.castShadow = m.receiveShadow = true; scene.add(m);
+  }
+  for (const side of [-1, 1]) {
+    for (const trk of [-1, 1]) {
+      sweepDeck(side, trk, 1200, X_RIM, DECK_W, 0.5);   // one smooth deck per direction, anchor → its rim connection
+      // piers every ~30 m, but not inside the station hall (platforms carry that span)
+      for (let xx = 1212; xx < X_RIM - 6; xx += 30) {
+        if (xx > 1374 && xx < 1422) continue;
+        const wx = side * xx, zc = trackCZ(wx, trk);
+        scene.add(strut(new THREE.Vector3(wx, terrainH(wx, zc) - 1, zc),
+                        new THREE.Vector3(wx, trackY(xx) - 2.55, zc), 0.8, 0.66, concMat, true));
+        box(1.9, 0.8, DECK_W - 1.4, concMat, wx, trackY(xx) - 3.0, zc, scene, true);
+      }
+      // smooth continuous plinth wall under each of the two rails, to the rim
+      for (const rs of [-RAIL_HALF, RAIL_HALF]) sweepWall(side, trk, rs, 1200, X_RIM, 0.34);
+    }
+    // fill the throat between the two decks as they converge toward the turntable — without this
+    // the wedge between the curving decks is open to the ground
+    sweepSlab(side, XC0, X_RIM);
+  }
+
+  // ---------- Helpers: text signage ----------
+  function textPanel(text, w, h, bg, fg) {
+    const cv = document.createElement('canvas');
+    cv.width = 512; cv.height = Math.round(512 * h / w);
+    const c = cv.getContext('2d');
+    c.fillStyle = bg; c.fillRect(0, 0, cv.width, cv.height);
+    c.fillStyle = fg;
+    c.font = '600 ' + Math.round(cv.height * 0.52) + 'px system-ui, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(text, cv.width / 2, cv.height / 2 + 2);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ map: tex }));
+    return m;
+  }
+
+  // ---------- Stations: island + side platforms, two cantilever canopies, people ----------
+  const HALL0 = 1376, HALL1 = 1420, HALL_C = (HALL0 + HALL1) / 2, HALL_LEN = HALL1 - HALL0;
+  const HALL_W = TRACK_Z + 3.9 + 2.6;                // outer edge: deck half-width (3.9) + side platform
+  const ISLAND_HALF = TRACK_Z - 3.9 - 0.1;           // island platform between the two track decks
+  const SIDE_C = (TRACK_Z + 3.9 + HALL_W) / 2;       // centre of each side platform
+  const COL_Z = TRACK_Z - 6.0;                       // canopy column line, inboard clear of the inner wingtip
+  const ROOF_Y = 12.5;                               // canopy beam height at the columns
+
+  for (const side of [-1, 1]) {
+    const st = new THREE.Group();
+    st.position.set(side * HALL_C, 0, 0);
+    scene.add(st);
+    const gy = 1.6;
+    const SO = { x0: 5.3, x1: 10.9, z0: 3.4, z1: 5.9 };   // stair opening cut in the island slab (a clear bay under the +z canopy)
+
+    // island platform between the two tracks + a side platform outboard of each track,
+    // leaving the track decks (z = ±TRACK_Z) clear to run straight through the hall
+    // island slab built as a frame around the rectangular stair opening (SO)
+    {
+      const iy = DECK_TOP - 0.45, iL = HALL_LEN + 2, iX = iL / 2, iZ = ISLAND_HALF, mz = (SO.z0 + SO.z1) / 2;
+      const a = box(iL, 0.9, SO.z0 + iZ, concMat, 0, iy, (SO.z0 - iZ) / 2, st, true); a.receiveShadow = true;                  // z < z0
+      const b = box(iL, 0.9, iZ - SO.z1, concMat, 0, iy, (SO.z1 + iZ) / 2, st, true); b.receiveShadow = true;                  // z > z1
+      const c = box(SO.x0 + iX, 0.9, SO.z1 - SO.z0, concMat, (SO.x0 - iX) / 2, iy, mz, st, true); c.receiveShadow = true;      // x < x0
+      const d = box(iX - SO.x1, 0.9, SO.z1 - SO.z0, concMat, (SO.x1 + iX) / 2, iy, mz, st, true); d.receiveShadow = true;      // x > x1
+    }
+    const sideW = HALL_W - (TRACK_Z + 3.9);
+    for (const s of [-1, 1]) {
+      const sp = box(HALL_LEN + 2, 0.9, sideW, concMat, 0, DECK_TOP - 0.45, s * SIDE_C, st, true);
+      sp.receiveShadow = true;
+    }
+    // piers under the platforms
+    for (const px of [-16, -2, 12]) {
+      for (const pz of [-5, 5]) st.add(strut(new THREE.Vector3(px, gy - 1, pz), new THREE.Vector3(px, DECK_TOP - 0.8, pz), 0.7, 0.6, concMat, true));
+      for (const s of [-1, 1]) st.add(strut(new THREE.Vector3(px, gy - 1, s * SIDE_C), new THREE.Vector3(px, DECK_TOP - 0.8, s * SIDE_C), 0.5, 0.42, concMat, true));
+    }
+
+    // platform edge warning strips (island edges + side-platform inner edges)
+    for (const ez of [-(ISLAND_HALF - 0.25), ISLAND_HALF - 0.25, -(TRACK_Z + 3.9 + 0.25), TRACK_Z + 3.9 + 0.25])
+      box(HALL_LEN - 2, 0.04, 0.4, yellowMat, 0, DECK_TOP + 0.03, ez, st, false);
+
+    // ----- stair from the island down to street level, through the slab opening (under the +z canopy) -----
+    {
+      const STREET_Y = 0.9;
+      const zMid = (SO.z0 + SO.z1) / 2;                 // spine between the two flights
+      const zA = SO.z0 + 0.7, zB = SO.z1 - 0.7;         // the two flight centre-lines
+      const flW = (SO.z1 - SO.z0) / 2 - 0.2;            // flight (tread) width
+      const xa = SO.x0 + 0.3, xb = SO.x1 - 0.5;         // flight x extents inside the opening
+      const yMid = (DECK_TOP + STREET_Y) / 2;           // mid-landing level
+      const flight = (x0, x1, yTop, yBot, zc, n) => {
+        const dx = (x1 - x0) / n, dy = (yBot - yTop) / n;
+        for (let i = 0; i < n; i++) {
+          const sx = x0 + (i + 0.5) * dx, sy = yTop + (i + 1) * dy;
+          box(Math.abs(dx) + 0.05, 0.16, flW, concMat, sx, sy - 0.08, zc, st, true);                              // tread
+          box(0.06, Math.abs(dy) + 0.16, flW, concMat, x0 + i * dx, sy - Math.abs(dy) / 2 - 0.04, zc, st, false); // riser
+        }
+      };
+      flight(xa, xb, DECK_TOP, yMid, zA, 8);            // upper flight: down along +x on the near-z side
+      flight(xb, xa, yMid, STREET_Y, zB, 8);            // lower flight: switches back along -x on the far-z side
+      box(1.5, 0.18, SO.z1 - SO.z0, concMat, xb + 0.45, yMid - 0.09, zMid, st, true);                 // mid landing (far-x end)
+      box(2.2, 0.2, SO.z1 - SO.z0 + 0.8, concMat, xa - 0.6, STREET_Y - 0.1, zMid, st, true);          // concourse pad at street level
+      box(xb - xa + 1.2, 1.0, 0.16, darkMat, (xa + xb) / 2 + 0.1, yMid + 0.35, zMid, st, true);       // spine wall between flights
+      // glass balustrade around the opening (the near-z corner of the near-x end is left open as the entry)
+      const bal = (lx, lz, cx, cz) => {
+        box(lx, 0.95, lz, glassMat, cx, DECK_TOP + 0.48, cz, st, false);
+        box(lx + 0.06, 0.08, lz + 0.06, steelDark, cx, DECK_TOP + 1.0, cz, st, false);
+      };
+      const cX = (SO.x0 + SO.x1) / 2;
+      bal(SO.x1 - SO.x0, 0.1, cX, SO.z0);                       // long side at z0
+      bal(SO.x1 - SO.x0, 0.1, cX, SO.z1);                       // long side at z1
+      bal(0.1, SO.z1 - SO.z0, SO.x1, zMid);                     // far-x end
+      bal(0.1, SO.z1 - zMid, SO.x0, (zMid + SO.z1) / 2);        // near-x end, far-z half only (entry left open)
+    }
+
+    // ----- two separate cantilever canopies, one per track -----
+    for (const sgn of [-1, 1]) {
+      const colZ = sgn * COL_Z;
+      // inboard column row carrying the canopy
+      for (let xi = -2; xi <= 2; xi++) {
+        st.add(strut(new THREE.Vector3(xi * 9.5, gy - 0.5, colZ),
+                     new THREE.Vector3(xi * 9.5, ROOF_Y, colZ), 0.4, 0.32, pylonMat, true));
+        // cantilever bracket: column top out under the roof tip
+        st.add(strut(new THREE.Vector3(xi * 9.5, ROOF_Y - 0.2, colZ),
+                     new THREE.Vector3(xi * 9.5, ROOF_Y + 1.05, sgn * (HALL_W + 0.2)), 0.12, 0.08, steelDark, false));
+        // short back-stay over the island
+        st.add(strut(new THREE.Vector3(xi * 9.5, ROOF_Y - 0.2, colZ),
+                     new THREE.Vector3(xi * 9.5, ROOF_Y + 0.3, sgn * (COL_Z - 3.5)), 0.1, 0.07, steelDark, false));
+      }
+      // longitudinal beam on the column tops
+      box(HALL_LEN + 5, 0.5, 0.6, pylonMat, 0, ROOF_Y - 0.05, colZ, st, true);
+
+      // cantilever roof plane: from just over the island out past the outer rail, tilted up
+      const zIn = sgn * (COL_Z - 3.5), zOut = sgn * (HALL_W + 0.5);
+      const yIn = ROOF_Y + 0.25, yOut = ROOF_Y + 1.25;
+      const wz = Math.abs(zOut - zIn), zc = (zIn + zOut) / 2, yc = (yIn + yOut) / 2;
+      const roof = box(HALL_LEN + 6, 0.26, wz, steelRoofMat, 0, yc, zc, st, true);
+      roof.rotation.x = -Math.atan2(yOut - yIn, zOut - zIn);
+      // glass skylight strip near the inboard edge
+      const sky = box(HALL_LEN + 2, 0.06, wz * 0.26, glassMat, 0, yc + 0.16, (zIn * 0.62 + zc * 0.38), st, false);
+      sky.rotation.x = roof.rotation.x;
+      // fascia edge beam with station name
+      const fascia = textPanel(side > 0 ? 'STATION EAST' : 'STATION WEST', 8, 0.95, '#d85a30', '#ffffff');
+      fascia.position.set(0, yOut - 0.1, zOut + 0.02 * sgn);
+      fascia.rotation.y = sgn > 0 ? 0 : Math.PI;
+      st.add(fascia);
+      // light strip under each canopy, over its track
+      box(HALL_LEN - 4, 0.08, 0.5, lightMat, 0, ROOF_Y - 0.4, sgn * TRACK_Z, st, false);
+    }
+
+    // route signage on totems over the island (in the open central spine)
+    for (const ex of [-HALL_LEN / 2 + 4, HALL_LEN / 2 - 4]) {
+      const sgnp = textPanel('CABLE GLIDE', 6.5, 0.9, '#23282c', '#f4f3ee');
+      sgnp.position.set(ex, ROOF_Y + 1.7, 0);
+      st.add(sgnp);
+      st.add(strut(new THREE.Vector3(ex, DECK_TOP, 0), new THREE.Vector3(ex, ROOF_Y + 1.2, 0), 0.12, 0.1, darkMat, false));
+    }
+
+    // island furniture: benches (under the canopies, off the open spine), info screens, totems
+    for (const bx of [-12, -4, 4, 12]) for (const bz of [-5, 5]) {
+      box(2.4, 0.1, 0.7, whiteMat, bx, DECK_TOP + 0.48, bz, st, true);
+      for (const lx of [-1, 1]) box(0.08, 0.46, 0.6, darkMat, bx + lx, DECK_TOP + 0.23, bz, st, false);
+    }
+    for (const sx of [-9, 9]) {
+      st.add(strut(new THREE.Vector3(sx, DECK_TOP, 1.6), new THREE.Vector3(sx, DECK_TOP + 2.5, 1.6), 0.06, 0.05, darkMat, false));
+      box(1.7, 0.85, 0.1, darkMat, sx, DECK_TOP + 2.6, 1.6, st, false);
+      const scr = textPanel(side > 0 ? '→ WEST  2 min' : '→ EAST  2 min', 1.6, 0.7, '#101417', '#ffd27a');
+      scr.position.set(sx, DECK_TOP + 2.6, 1.66);
+      st.add(scr);
+    }
+    // lift core on the island, set under the canopy (off the open central spine)
+    {
+      const LIFT_Z = 4.6;
+      const lift = box(2.6, DECK_TOP - gy + 3.4, 2.6, glassMat, 0, (DECK_TOP + gy) / 2 + 1.7, LIFT_Z, st, true);
+      lift.castShadow = true;
+      box(2.9, 0.3, 2.9, darkMat, 0, DECK_TOP + 3.5, LIFT_Z, st, false);             // roof cap
+      for (const cx of [-1.18, 1.18]) for (const cz of [-1.18, 1.18])                // corner posts → reads as a shaft
+        box(0.12, DECK_TOP - gy + 3.4, 0.12, steelDark, cx, (DECK_TOP + gy) / 2 + 1.7, LIFT_Z + cz, st, false);
+    }
+    // people on the platforms
+    (function people() {
+      const n = 26;
+      const bodies = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.11, 0.13, 0.95, 7),
+        new THREE.MeshStandardMaterial({ color: 0xffffff }), n);
+      const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.085, 8, 7),
+        new THREE.MeshStandardMaterial({ color: 0xd9b08c }), n);
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion();
+      const palette = [0x5a7d9a, 0x9a5a5a, 0x6a8a5d, 0x8a7a5d, 0x55606b, 0xa3744f, 0x7a5a8a];
+      for (let i = 0; i < n; i++) {
+        const lane = Math.random();
+        const z = lane < 0.6 ? (Math.random() - 0.5) * 2 * (ISLAND_HALF - 0.6)
+                : (Math.random() < 0.5 ? 1 : -1) * (TRACK_Z + 3.9 + 0.5 + Math.random() * (HALL_W - TRACK_Z - 3.9 - 1.0));
+        const x = (Math.random() - 0.5) * (HALL_LEN - 6);
+        m.compose(new THREE.Vector3(x, DECK_TOP + 0.48, z), q, new THREE.Vector3(1, 1, 1));
+        bodies.setMatrixAt(i, m);
+        bodies.setColorAt(i, new THREE.Color(palette[i % palette.length]));
+        m.compose(new THREE.Vector3(x, DECK_TOP + 1.05, z), q, new THREE.Vector3(1, 1, 1));
+        heads.setMatrixAt(i, m);
+      }
+      bodies.castShadow = true;
+      st.add(bodies, heads);
+    })();
+  }
+
+  // ---------- Turning tables behind each station ----------
+  // ---------- Compact maintenance workshop tucked UNDER the approach viaduct, just before the
+  // turntable. No separate building beyond the terminus — it reuses the space below the existing
+  // deck to keep the footprint minimal. Vehicles are lowered into it by the turntable (see the
+  // scripted repair event). ----------
+  function buildDepot(side) {
+    const gyT = 1.4, inset = 0.4;
+    const workshopMat = new THREE.MeshStandardMaterial({ color: 0x4f7d86, roughness: 0.7, metalness: 0.1 });
+    // outer edge of the carrying concrete (the two converging approach decks) at a given world x
+    const edgeZ = wx => Math.abs(trackCZ(wx, 1)) + DECK_W / 2 - inset;
+    const xOuter = side * (X_RIM - 21);     // station-side end (wide, under the diverging decks)
+    const xInner = side * (X_RIM - 1.5);    // table/rim-side end (narrow — the bay mouth)
+    const wFloor = gyT, wTop = 5.8, wH = wTop - wFloor, wMid = (wFloor + wTop) / 2;
+    const eOuter = edgeZ(xOuter), eInner = edgeZ(xInner), NS = 12;
+
+    // trapezoidal floor slab following the concrete footprint above
+    {
+      const pos = [], idx = [];
+      for (let i = 0; i <= NS; i++) {
+        const wx = xOuter + (xInner - xOuter) * i / NS, e = edgeZ(wx);
+        pos.push(wx, wFloor + 0.12, e); pos.push(wx, wFloor + 0.12, -e);
+        if (i > 0) { const a = (i - 1) * 2, b = i * 2; idx.push(a, b, b + 1, a, b + 1, a + 1); }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, concMat); m.receiveShadow = m.castShadow = true; scene.add(m);
+    }
+    // side walls follow the deck edges out to the concrete (a chain of segments), both sides
+    for (const zs of [-1, 1]) for (let i = 0; i < NS; i++) {
+      const xa = xOuter + (xInner - xOuter) * i / NS, xb = xOuter + (xInner - xOuter) * (i + 1) / NS;
+      const za = zs * edgeZ(xa), zb = zs * edgeZ(xb);
+      const mx = (xa + xb) / 2, mz = (za + zb) / 2, len = Math.hypot(xb - xa, zb - za);
+      const seg = box(len + 0.06, wH, 0.35, workshopMat, mx, wMid, mz, scene, true);
+      seg.rotation.y = -Math.atan2(zb - za, xb - xa);
+    }
+    // station-side end wall (wide) + a strip window
+    box(0.4, wH, 2 * eOuter, workshopMat, xOuter, wMid, 0, scene, true);
+    box(0.06, 1.0, 2 * eOuter * 0.55, glassMat, xOuter - side * 0.06, wTop - 1.2, 0, scene, false);
+
+    // table-side end wall = portal with a roller door (the bay mouth, facing the turntable)
+    const dHW = 2.7, headH = 1.0, jw = eInner - dHW;
+    for (const oz of [-1, 1]) box(0.4, wH, jw, workshopMat, xInner, wMid, oz * (dHW + jw / 2), scene, true);  // jambs
+    box(0.4, headH, 2 * dHW, workshopMat, xInner, wTop - headH / 2, 0, scene, true);                          // header
+    const doorH = wH - headH;
+    box(0.14, doorH, 2 * dHW, steelDark, xInner - side * 0.12, wFloor + doorH / 2, 0, scene, false);          // roller door
+    for (let k = 1; k < 7; k++) box(0.03, 0.05, 2 * dHW, darkMat, xInner - side * 0.2, wFloor + k * (doorH / 7), 0, scene, false);  // ribs
+    // lit signboard over the bay door (faces the turntable, where the lowering plays out)
+    const wsSign = textPanel('MAINTENANCE', 5.2, 0.82, '#143b41', '#eaf3f4');
+    wsSign.position.set(xInner + side * 0.24, wTop - headH / 2, 0);
+    wsSign.rotation.y = side * Math.PI / 2;
+    scene.add(wsSign);
+    // a second nameboard on the wide station-side end wall
+    const wsSign2 = textPanel('CABLE GLIDE · DEPOT', 9.0, 1.0, '#23282c', '#f4f3ee');
+    wsSign2.position.set(xOuter - side * 0.24, wTop - 1.1, 0);
+    wsSign2.rotation.y = side * Math.PI / 2 + Math.PI;
+    scene.add(wsSign2);
+  }
+
+  // Small centred turntable: the vehicle stops centred on the diameter bridge, the bridge
+  // rotates 180° in place (the approach tracks curve in to the throat to make this work).
+  const tables = [];
+  for (const side of [-1, 1]) {
+    const cx = side * TABLE_X;
+    const gy = 1.6;
+
+    // fixed pit: drum wall, walkway ring, guard rail
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(R_TABLE + 1.4, R_TABLE + 1.7, DECK_TOP - 0.4 - gy, 44), concMat);
+    drum.position.set(cx, (DECK_TOP - 0.4 + gy) / 2, 0);
+    drum.castShadow = drum.receiveShadow = true;
+    scene.add(drum);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(R_TABLE + 0.12, R_TABLE + 1.4, 44), concDark);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(cx, DECK_TOP - 0.06, 0);
+    scene.add(ring);
+    // guard rail: posts + top rail, but OPEN where each track meets the rim so nothing fouls the
+    // vehicle. The two connections sit at directions (−side·cosδ, ±side·sinδ) from the centre.
+    const grR = R_TABLE + 1.26;
+    const conn = [[-side * Math.cos(DELTA), -side * Math.sin(DELTA)], [-side * Math.cos(DELTA), side * Math.sin(DELTA)]];
+    const openDirs = conn.slice();   // only the two approach-track connections (no spur beyond the table any more)
+    const railGap = a => {
+      const dx = Math.cos(a), dz = Math.sin(a);
+      return openDirs.some(c => dx * c[0] + dz * c[1] > Math.cos(0.5));   // within ~29° of a track connection
+    };
+    const NP = 36;
+    for (let i = 0; i < NP; i++) {
+      const a = i / NP * Math.PI * 2;
+      if (railGap(a)) continue;
+      const px = cx + Math.cos(a) * grR, pz = Math.sin(a) * grR;
+      scene.add(strut(new THREE.Vector3(px, DECK_TOP - 0.05, pz),
+                      new THREE.Vector3(px, DECK_TOP + 1.0, pz), 0.035, 0.03, darkMat, false));
+      const a2 = (i + 1) / NP * Math.PI * 2;
+      if (!railGap(a2)) {   // top rail segment to the next post, only if it is kept too
+        const qx = cx + Math.cos(a2) * grR, qz = Math.sin(a2) * grR;
+        scene.add(strut(new THREE.Vector3(px, DECK_TOP + 1.0, pz),
+                        new THREE.Vector3(qx, DECK_TOP + 1.0, qz), 0.035, 0.035, darkMat, false));
+      }
+    }
+    // machinery house + transformer beside the pit
+    box(4.6, 3.1, 3.4, concDark, cx - side * 2, gy + 1.55, R_TABLE + 4.8, scene, true);
+    box(1.2, 0.9, 1.6, darkMat, cx - side * 5.4, gy + 0.45, R_TABLE + 4.2, scene, true);
+
+    // rotating deck
+    const deck = new THREE.Group();
+    deck.position.set(cx, 0, 0);
+    scene.add(deck);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(R_TABLE, R_TABLE, 0.55, 52), concDark);
+    disc.position.y = DECK_TOP - 0.28;
+    disc.castShadow = disc.receiveShadow = true;
+    deck.add(disc);
+    // hazard chevrons around the rim
+    const NCH = 44;
+    for (let i = 0; i < NCH; i++) {
+      const a = i / NCH * Math.PI * 2;
+      const ch = box(0.7, 0.05, 0.42, i % 2 ? yellowMat : darkMat,
+        Math.sin(a) * (R_TABLE - 0.4), DECK_TOP + 0.012, Math.cos(a) * (R_TABLE - 0.4), deck, false);
+      ch.rotation.y = a;
+    }
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.05, 0.16, 20), redMat);
+    hub.position.y = DECK_TOP + 0.06;
+    deck.add(hub);
+    // diameter bridge track on the deck: rails along x (at rest), through the centre
+    const halfLen = R_TABLE;          // wall/support spans the disc diameter
+    const headHalf = R_TABLE + 0.6;   // rail HEAD overhangs the rim a touch so it overlaps the static rail when
+                                      // aligned — the two ended exactly at the rim before, meeting with no overlap → a visible gap
+    for (const rs of [-RAIL_HALF, RAIL_HALF]) {
+      const wall = box(2 * halfLen, 1.42, 0.34, concDark, 0, 8 - HEAD_R - 0.71, rs, deck, false);
+      wall.castShadow = true;
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(HEAD_R, HEAD_R, 2 * headHalf, 10), railMat);
+      head.rotation.z = Math.PI / 2;
+      head.position.set(0, 8, rs);
+      head.castShadow = true;
+      deck.add(head);
+    }
+    // walkway plates either side of the bridge
+    for (const off of [-RAIL_HALF - 1.0, RAIL_HALF + 1.0]) {
+      const wlen = 2 * (Math.sqrt(Math.max(R_TABLE * R_TABLE - (Math.abs(off) + 0.55) ** 2, 1)) - 0.3);
+      box(wlen, 0.05, 1.0, steelDark, 0, DECK_TOP + 0.03, off, deck, false);
+    }
+
+    // alignment angles: which way the bridge points to meet each track
+    const S = side;
+    const dirEntry = [S * Math.cos(DELTA), S * Math.sin(DELTA)];   // P_A → centre (x,z)
+    const dirExit  = [-S * Math.cos(DELTA), S * Math.sin(DELTA)];  // centre → P_B (x,z)
+    const yawEntry = Math.atan2(dirEntry[0], dirEntry[1]);
+    const yawExit  = Math.atan2(dirExit[0], dirExit[1]);
+    const bridgeA  = Math.atan2(-dirEntry[1], dirEntry[0]);        // deck rotation aligning the bridge to track A
+    const bridgeB  = Math.atan2(-dirExit[1], dirExit[0]);          //   …and to track B
+    deck.rotation.y = bridgeA;
+
+    tables.push({ side, cx, deck, S, yawEntry, yawExit, bridgeA, bridgeB, busy: false });
+    if (side > 0) buildDepot(side);   // single maintenance works at the far end; start station has none
+  }
+  function tableAt(side) { return tables[side > 0 ? 1 : 0]; }
+  function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % (2 * Math.PI)) - Math.PI; return a + d * t; }
+
+  // ---------- Station surroundings: an under-station path with sidewalks + a bus stop ----------
+  (function buildStationArea() {
+    // a flat ribbon running in z at a fixed world x, following the ground
+    function ribbon(wx, z0, z1, halfW, mat, yLift) {
+      const seg = Math.max(2, Math.round(Math.abs(z1 - z0) / 6)), v = [], idx = [];
+      for (let i = 0; i <= seg; i++) { const z = z0 + (z1 - z0) * i / seg, y = terrainH(wx, z) + yLift; v.push(wx - halfW, y, z, wx + halfW, y, z); }
+      for (let i = 0; i < seg; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat); m.receiveShadow = true; scene.add(m);
+    }
+    const curbMat  = new THREE.MeshStandardMaterial({ color: 0xc7c5bb });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x8a9095, roughness: 0.5, metalness: 0.55 });
+    const signMat  = new THREE.MeshStandardMaterial({ color: 0x2f6fb0, roughness: 0.6 });
+    for (const side of [-1, 1]) {
+      const px = side * HALL_C + 4.75;                 // threads between the station columns/piers
+      const z0 = -460, z1 = 460;
+      ribbon(px, z0, z1, 2.0, asphaltMat, 0.06);                                   // 4 m asphalt path under the station
+      for (const so of [-3.2, 3.2]) ribbon(px + so, z0, z1, 0.95, curbMat, 0.2);   // raised sidewalks both sides
+      for (let z = -150; z < 150; z += 8) box(0.18, 0.02, 2.8, lineMat, px, terrainH(px, z) + 0.13, z, scene, false);  // centre line
+      // bus stop on the sidewalk next to the station (no bus)
+      const bx = px + 4.4, bz = 38, gy = terrainH(bx, bz);
+      box(2.6, 0.14, 4.4, metalMat, bx, gy + 2.45, bz, scene, true);               // roof
+      for (const pz of [bz - 1.9, bz + 1.9]) for (const ox of [-1.1, 1.1])
+        scene.add(strut(new THREE.Vector3(bx + ox, gy, pz), new THREE.Vector3(bx + ox, gy + 2.45, pz), 0.07, 0.06, metalMat, true));
+      box(0.08, 1.7, 4.1, glassMat, bx + 1.2, gy + 1.05, bz, scene, false);        // glass back wall
+      box(0.55, 0.08, 3.4, metalMat, bx + 0.55, gy + 0.55, bz, scene, true);       // bench seat
+      box(0.55, 0.5, 0.08, metalMat, bx + 0.55, gy + 0.78, bz, scene, false);      // bench back
+      scene.add(strut(new THREE.Vector3(bx - 2.2, gy, bz), new THREE.Vector3(bx - 2.2, gy + 3.0, bz), 0.06, 0.05, metalMat, true));  // sign post
+      box(0.12, 0.7, 0.95, signMat, bx - 2.2, gy + 2.75, bz, scene, true);         // bus-stop sign
+    }
+  })();
+
+
+  // ---------- Detailed bogie (drawing legend 1–8) ----------
+  // 1 control arm · 2 spring and damper · 3 side guide wheels · 4 cable clamps (on track)
+  // 5 clamper body · 6 top driven road wheel · 7 rail · 8 up-stop wheels
+  const DRIVE_R = 0.30;
+  const WING_UNDER = 0.86;
+  function coilSpring(R, len, turns, wireR) {
+    const pts = [];
+    const N = 96;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      pts.push(new THREE.Vector3(Math.cos(t * turns * Math.PI * 2) * R, t * len,
+                                 Math.sin(t * turns * Math.PI * 2) * R));
+    }
+    return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N, wireR, 6, false), redMat);
+  }
+  function makeBogie() {
+    const g = new THREE.Group();
+    const refs = { spin: null, coils: [] };
+    const axleY = HEAD_R + DRIVE_R;
+
+    // 6 — top steel wheel (spinning group: tyre, flanges, web, hub motor, bolts)
+    const spin = new THREE.Group();
+    spin.position.y = axleY;
+    const tyre = new THREE.Mesh(new THREE.CylinderGeometry(DRIVE_R, DRIVE_R, 0.15, 28), steelMat);
+    tyre.rotation.z = Math.PI / 2; spin.add(tyre);
+    for (const fx of [-0.08, 0.08]) {
+      const fl = new THREE.Mesh(new THREE.CylinderGeometry(DRIVE_R + 0.028, DRIVE_R + 0.028, 0.028, 28), steelDark);
+      fl.rotation.z = Math.PI / 2; fl.position.x = fx; spin.add(fl);
+    }
+    const web = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.17, 24), darkMat);
+    web.rotation.z = Math.PI / 2; spin.add(web);
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.38, 16), redMat);
+    motor.rotation.z = Math.PI / 2; spin.add(motor);
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 6), steelMat);
+      bolt.rotation.z = Math.PI / 2;
+      bolt.position.set(0, Math.cos(a) * 0.16, Math.sin(a) * 0.16);
+      spin.add(bolt);
+    }
+    g.add(spin);
+    refs.spin = spin;
+    // axle + axle boxes + primary pads
+    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.68, 8), steelMat);
+    axle.rotation.z = Math.PI / 2; axle.position.y = axleY; g.add(axle);
+    for (const ax of [-0.32, 0.32]) {
+      box(0.13, 0.2, 0.26, darkMat, ax, axleY, 0, g, false);
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.13, 8), steelDark);
+      pad.position.set(ax, axleY + 0.17, 0); g.add(pad);
+    }
+    // brake caliper hugging the tyre
+    box(0.1, 0.15, 0.24, redMat, 0.12, axleY + 0.25, -0.22, g, false);
+
+    // 5 — clamper body: compact C-frame wrapping the rail head (slimmed down)
+    for (const ax of [-0.26, 0.26]) {
+      const plate = box(0.045, 0.82, 0.92, darkMat, ax, 0.21, 0, g, true);
+      plate.castShadow = true;
+    }
+    box(0.5, 0.07, 0.92, darkMat, 0, 0.72, 0, g, false);
+    for (const cz of [-0.4, 0.4]) box(0.5, 0.18, 0.06, darkMat, 0, 0.56, cz, g, false);
+    for (const cz of [-0.24, 0.24]) box(0.5, 0.04, 0.04, steelDark, 0, 0.74, cz, g, false);
+
+    // 8 — roller-coaster-style clamp wheels: driven road wheel (6) on top, small up-stop wheels
+    //     gripping underneath and side guide wheels on the flanks — a tight constant-compression clamp
+    const railBot = -HEAD_R;
+    box(0.2, 0.07, 0.8, darkMat, 0, railBot - 0.085, 0, g, false);      // slim under-rail bracket beam
+    for (const sz of [-0.34, 0.34]) {                                   // small up-stop wheels under the head
+      const up = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.10, 16), steelMat);
+      up.rotation.z = Math.PI / 2; up.position.set(0, railBot - 0.075, sz); g.add(up);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 10), steelDark);
+      hub.rotation.z = Math.PI / 2; hub.position.set(0, railBot - 0.075, sz); g.add(hub);
+    }
+    // small side guide wheels on the rail-head flanks, on short stub brackets
+    for (const sz of [-0.34, 0.34]) for (const sx of [-1, 1]) {
+      const sw = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.11, 14), steelMat);
+      sw.position.set(sx * (HEAD_R + 0.06), 0.02, sz); g.add(sw);
+      box(0.12, 0.08, 0.11, darkMat, sx * 0.18, 0.02, sz, g, false);
+    }
+
+    // 2 — secondary suspension: enclosed strut units (springs concealed inside the housings)
+    const SEAT_Y = 0.72;
+    for (const cz of [-0.45, 0.45]) {
+      box(0.34, 0.05, 0.36, steelDark, 0, SEAT_Y, cz, g, false);                 // lower seat / base plate
+      const H = WING_UNDER - SEAT_Y - 0.05;
+      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.15, H, 18), darkMat);
+      sleeve.position.set(0, SEAT_Y + 0.025 + H / 2, cz); sleeve.castShadow = true; g.add(sleeve);
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.05, 18), steelDark);
+      collar.position.set(0, WING_UNDER - 0.05, cz); g.add(collar);
+    }
+
+    // wing interface plate + gussets (bracket to the wing above)
+    box(0.6, 0.08, 1.4, whiteMat, 0, WING_UNDER + 0.04, 0, g, true);
+    for (const cz of [-0.6, 0.6]) box(0.42, 0.14, 0.18, whiteMat, 0, WING_UNDER - 0.04, cz, g, false);
+
+    g.traverse(o => { if (o.isMesh && o.castShadow === undefined) o.castShadow = false; });
+    return { g, refs };
+  }
+
+  // ---------- Vehicle: tandem wing on four detailed bogies ----------
+  const FRONT_Z = 1.55, REAR_Z = -1.55;   // tandem-wing / bogie positions (closer together)
+  function makeVehicle() {
+    const root = new THREE.Group();
+    const body = new THREE.Group();
+    root.add(body);
+    const FUS_Y = 0.1;
+
+    // ---- sleek aircraft fuselage: long, slim, streamlined — fine nose and a long tapering tail boom ----
+    const prof = [
+      [0.03, 4.30], [0.20, 4.00], [0.42, 3.55], [0.62, 3.00], [0.80, 2.30],
+      [0.92, 1.50], [0.96, 0.60], [0.95, -0.30], [0.86, -1.20], [0.70, -2.10],
+      [0.52, -2.95], [0.34, -3.70], [0.18, -4.30], [0.03, -4.70]
+    ].map(p => new THREE.Vector2(p[0], p[1]));
+    const fusGeo = new THREE.LatheGeometry(prof, 48);
+    fusGeo.rotateX(Math.PI / 2);
+    const fus = new THREE.Mesh(fusGeo, whiteMat);
+    fus.position.y = FUS_Y; fus.scale.x = 1.06;        // nearly round — slim, not bulky
+    body.add(fus);
+    const fusR = z => {
+      const P = [[4.30,0.03],[4.00,0.20],[3.55,0.42],[3.00,0.62],[2.30,0.80],[1.50,0.92],
+                 [0.60,0.96],[-0.30,0.95],[-1.20,0.86],[-2.10,0.70],[-2.95,0.52],[-3.70,0.34],[-4.30,0.18],[-4.70,0.03]];
+      for (let i = 0; i < P.length - 1; i++) if (z <= P[i][0] && z >= P[i+1][0]) {
+        const t = (z - P[i][0]) / (P[i+1][0] - P[i][0]); return P[i][1] + t * (P[i+1][1] - P[i][1]);
+      }
+      return 0.03;
+    };
+
+    // ---- wings: a larger swept MAIN wing (front) + a smaller STABILISER (rear), each a smooth
+    //      lofted airfoil that reaches the bogies, fairs into the fuselage, with upswept winglets ----
+    const wingSurf = whiteMat.clone(); wingSurf.side = THREE.DoubleSide;
+    const naca = (p, tc) => 5 * tc * (0.2969 * Math.sqrt(Math.max(p, 0)) - 0.1260 * p - 0.3516 * p * p + 0.2843 * p * p * p - 0.1036 * p * p * p * p);
+    const XT = 4.5, SHX = 2.6;
+    function addWing(wz, cR, cT, tR, sweepO, shY) {
+      const podTop = FUS_Y + fusR(wz);
+      const yc = ax => { if (ax <= SHX) { const t = ax / SHX, s = t * t * (3 - 2 * t); const r = shY - 0.16; return r + s * (shY - r); } const t = (ax - SHX) / (XT - SHX); return shY + t * 0.14; };
+      const wChord = ax => cR - (cR - cT) * Math.min(1, ax / XT);
+      const wThick = ax => tR - (tR - 0.09) * Math.min(1, ax / XT);
+      const zoff = ax => wz - sweepO * Math.max(0, ax - SHX);     // sweep only outboard (keeps the bogie covered)
+      const N = 22, K = 8, M = 2 * K, pos = [];
+      for (let i = 0; i <= 2 * N; i++) {
+        const x = -XT + (i / (2 * N)) * 2 * XT, ax = Math.abs(x);
+        const yC = yc(ax), c = wChord(ax), tc = wThick(ax) / c, z0 = zoff(ax);
+        for (let k = 0; k <= K; k++) { const p = (1 - Math.cos(Math.PI * k / K)) / 2; pos.push(x, yC + naca(p, tc) * c, z0 + (0.5 - p) * c); }
+        for (let k = K - 1; k >= 1; k--) { const p = (1 - Math.cos(Math.PI * k / K)) / 2; pos.push(x, yC - naca(p, tc) * c, z0 + (0.5 - p) * c); }
+      }
+      const idx = [];
+      for (let i = 0; i < 2 * N; i++) for (let j = 0; j < M; j++) {
+        const a = i * M + j, b = i * M + (j + 1) % M, cc = (i + 1) * M + j, d = (i + 1) * M + (j + 1) % M;
+        idx.push(a, cc, b, b, cc, d);
+      }
+      for (const i0 of [0, 2 * N]) {
+        const base = i0 * M, ci = pos.length / 3, x = -XT + (i0 / (2 * N)) * 2 * XT;
+        pos.push(x, yc(Math.abs(x)), zoff(Math.abs(x)));
+        for (let j = 0; j < M; j++) idx.push(ci, base + j, base + (j + 1) % M);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      body.add(new THREE.Mesh(g, wingSurf));
+    }
+    addWing(FRONT_Z, 2.2, 0.75, 0.46, 0.32, 0.99);     // main wing (front)
+    addWing(REAR_Z, 1.5, 0.55, 0.34, 0.15, 0.97);      // stabiliser (rear)
+
+    // swept vertical fin (tail) — a tapered, swept airfoil like a real vertical stabiliser
+    (function addFin() {
+      const y0 = FUS_Y + 0.40, y1 = FUS_Y + 2.05;        // base on the tail boom → tip
+      const zRoot = -3.0, sweep = 0.95;                  // leading edge sweeps back with height
+      const cRoot = 1.55, cTip = 0.55, tRoot = 0.17, tTip = 0.05;
+      const NS = 16, K = 8, M = 2 * K, pos = [];
+      for (let i = 0; i <= NS; i++) {
+        const f = i / NS, y = y0 + (y1 - y0) * f;
+        const c = cRoot + (cTip - cRoot) * f, tc = (tRoot + (tTip - tRoot) * f) / c, zc = zRoot - sweep * f;
+        for (let k = 0; k <= K; k++) { const p = (1 - Math.cos(Math.PI * k / K)) / 2; pos.push(naca(p, tc) * c, y, zc + (0.5 - p) * c); }
+        for (let k = K - 1; k >= 1; k--) { const p = (1 - Math.cos(Math.PI * k / K)) / 2; pos.push(-naca(p, tc) * c, y, zc + (0.5 - p) * c); }
+      }
+      const idx = [];
+      for (let i = 0; i < NS; i++) for (let j = 0; j < M; j++) {
+        const a = i * M + j, b = i * M + (j + 1) % M, cc = (i + 1) * M + j, d = (i + 1) * M + (j + 1) % M;
+        idx.push(a, cc, b, b, cc, d);
+      }
+      const base = NS * M, ci = pos.length / 3;          // cap the tip
+      pos.push(0, y1, zRoot - sweep);
+      for (let j = 0; j < M; j++) idx.push(ci, base + j, base + (j + 1) % M);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx); g.computeVertexNormals();
+      body.add(new THREE.Mesh(g, wingSurf));
+    })();
+
+    // four detailed bogies (fixed to the rail level; the body floats on the springs)
+    const bogies = [];
+    for (const sx of [-1, 1]) for (const wz of [FRONT_Z, REAR_Z]) {
+      const { g, refs } = makeBogie();
+      g.position.set(sx * RAIL_HALF, 0, wz);
+      root.add(g);
+      bogies.push(refs);
+    }
+    root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    scene.add(root);
+    return { root, body, bogies };
+  }
+
+  // ---------- Two cars in antiphase ----------
+  const CREEP = 4.0, ACC = 4.0, DEC = 4.0, TURN_T = 9.0;
+  function resetCar(c, side0) {
+    c.side0 = side0;
+    c.dir = side0 < 0 ? 1 : -1;             // west start heads east (+x), east start heads west
+    c.trk = c.dir > 0 ? -1 : 1;             // eastbound runs on z=-TRACK_Z, westbound on z=+TRACK_Z
+    c.x = side0 * P_STOP;
+    c.z = trackCZ(c.x, c.trk);
+    c.yaw = trackYaw(c.x, c.trk, c.dir);
+    c.v = 0; c.state = 'dwell_dep'; c.t = 2.5;
+    c.yaw0 = 0; c.heave = 0; c.heaveV = 0; c.pitch = 0; c.prevV = 0;
+  }
+  function makeCar(side0) {
+    const m = makeVehicle();
+    const c = { root: m.root, body: m.body, bogies: m.bogies };
+    resetCar(c, side0);
+    return c;
+  }
+  const carA = makeCar(-1);   // starts at the west station heading east
+  const carB = makeCar(1);    // starts at the east station heading west
+  const cars = [carA, carB];
+
+  function stepCar(c, dt, cruise) {
+    const accel = (c.v - c.prevV) / Math.max(dt, 1e-4);
+    c.prevV = c.v;
+
+    if (c.state === 'line') {
+      const target = c.dir * P_STOP;
+      const dStop = (target - c.x) * c.dir;
+      if (dStop <= 0.6) { c.v = 0; c.x = target; c.state = 'dwell_arr'; c.t = 3; }
+      else {
+        const vt = Math.min(cruise, Math.sqrt(2 * DEC * Math.max(dStop - 0.3, 0)));
+        c.v = c.v < vt ? Math.min(vt, c.v + ACC * dt) : Math.max(vt, c.v - DEC * dt);
+        c.x += c.dir * c.v * dt;
+      }
+    } else if (c.state === 'dwell_arr') {
+      c.t -= dt;
+      if (c.t <= 0) c.state = 'creep_in';
+    } else if (c.state === 'creep_in') {
+      const target = c.dir * TABLE_X;
+      const dStop = (target - c.x) * c.dir;
+      if (dStop <= 0.25) {
+        c.v = 0; c.x = target; c.state = 'pre_turn'; c.t = 1.0; tableAt(c.dir).busy = true;
+      } else {
+        const vt = Math.min(CREEP, Math.sqrt(2 * 1.2 * Math.max(dStop - 0.2, 0)));
+        c.v = c.v < vt ? Math.min(vt, c.v + 1.0 * dt) : Math.max(vt, c.v - 1.2 * dt);
+        c.x += c.dir * c.v * dt;
+      }
+    } else if (c.state === 'pre_turn') {
+      c.t -= dt;
+      if (c.t <= 0) { c.state = 'turn'; c.t = 0; }
+    } else if (c.state === 'turn') {
+      c.t += dt;
+      const tab = tableAt(c.x > 0 ? 1 : -1);
+      const p = Math.min(c.t / TURN_T, 1), sm = p * p * (3 - 2 * p);
+      c.yaw = lerpAngle(tab.yawEntry, tab.yawExit, sm);   // bridge swings to point at the other track
+      tab.deck.rotation.y = lerpAngle(tab.bridgeA, tab.bridgeB, sm);
+      if (p >= 1) {
+        c.dir = -c.dir; c.trk = -c.trk;                   // reversed, now aligned with the opposite track
+        c.yaw = tab.yawExit;
+        c.state = 'post_turn'; c.t = 0.9;
+      }
+    } else if (c.state === 'post_turn') {
+      c.t -= dt;
+      if (c.t <= 0) c.state = 'creep_out';
+    } else if (c.state === 'creep_out') {
+      const side = c.x > 0 ? 1 : -1;
+      const target = side * P_STOP;
+      const dStop = (target - c.x) * c.dir;     // dir now points back toward the platform
+      const tab = tableAt(side);
+      if (tab.busy && Math.abs(c.x - side * TABLE_X) > R_TABLE + 6) tab.busy = false;
+      if (dStop <= 0.3) { c.v = 0; c.x = target; c.state = 'dwell_dep'; c.t = 3.5; }
+      else {
+        const vt = Math.min(CREEP, Math.sqrt(2 * 1.2 * Math.max(dStop - 0.2, 0)));
+        c.v = c.v < vt ? Math.min(vt, c.v + 1.0 * dt) : Math.max(vt, c.v - 1.2 * dt);
+        c.x += c.dir * c.v * dt;
+      }
+    } else { // dwell_dep
+      c.t -= dt;
+      if (c.t <= 0 && cruise > 0.1) c.state = 'line';
+    }
+
+    // suspension heave: ~0.2–0.3 Hz hydropneumatic response to the span-periodic sag
+    let ex = 0;
+    if (Math.abs(c.x) < 1150 && c.v > 5) {
+      const amp = Math.min(c.v / 70, 1);
+      ex = 0.034 * amp * Math.sin(2 * Math.PI * c.x / SPAN)
+         + 0.009 * amp * Math.sin(2 * Math.PI * c.x / 8);
+    }
+    const w0 = 1.7, zeta = 0.4;
+    const hAcc = -w0 * w0 * (c.heave - ex) - 2 * zeta * w0 * c.heaveV;
+    c.heaveV += hAcc * dt;
+    c.heave += c.heaveV * dt;
+    const pTarget = THREE.MathUtils.clamp(-accel * 0.004, -0.02, 0.02);
+    c.pitch += (pTarget - c.pitch) * Math.min(1, dt * 3);
+
+    // derive position: on the bridge (rim→centre) follow the straight diameter; at the table centre
+    // hold while the bridge swings; otherwise follow the track centreline.
+    if (c.state === 'pre_turn') { c.z = 0; c.yaw = tableAt(c.x > 0 ? 1 : -1).yawEntry; }
+    else if (c.state === 'turn') { c.z = 0; /* yaw animated above */ }
+    else if (c.state === 'post_turn') { c.z = 0; c.yaw = tableAt(c.x > 0 ? 1 : -1).yawExit; }
+    else if ((c.state === 'creep_in' || c.state === 'creep_out') && Math.abs(c.x) >= X_RIM) {
+      const tab = tableAt(c.x > 0 ? 1 : -1);
+      const frac = (Math.abs(c.x) - X_RIM) / (TABLE_X - X_RIM);   // 0 at rim, 1 at centre
+      c.z = c.trk * Z_RIM * (1 - frac);
+      c.yaw = (c.state === 'creep_in') ? tab.yawEntry : tab.yawExit;
+    } else {
+      c.z = trackCZ(c.x, c.trk);
+      c.yaw = trackYaw(c.x, c.trk, c.dir);
+    }
+
+    // pose
+    const y = trackY(c.x);
+    c.root.position.set(c.x, y, c.z);
+    const gradePitch = (c.state === 'line') ? -Math.atan(trackSlope(c.x)) * c.dir : 0;
+    c.root.rotation.set(0, c.yaw, 0);
+    c.body.position.y = c.heave;
+    c.body.rotation.x = gradePitch + c.pitch;
+
+    // wheels + springs
+    const wOm = c.v / DRIVE_R * dt;
+    for (const b of c.bogies) {
+      b.spin.rotation.x -= wOm;
+      for (const cc of b.coils) {
+        const L = cc.L0 + c.heave;
+        cc.mesh.scale.y = Math.max(L / cc.L0, 0.55);
+        cc.mesh.position.y = cc.baseY;
+      }
+    }
+  }
+
+  // table snaps back to rest once the car has left (π ≡ 0 for the symmetric bridge, so invisible)
+  function stepTables(dt) {
+    for (const tab of tables) {
+      if (!tab.busy) tab.deck.rotation.y = lerpAngle(tab.deck.rotation.y, tab.bridgeA, Math.min(1, dt * 0.8));
+    }
+  }
+
+  // ---------- Cameras ----------
+  let camMode = 'follow';
+  let stationSide = 1;   // which end (±) the station view frames; captured when the view is selected
+  // per-view free look: drag rotates, wheel/pinch zooms — applied on top of every preset view
+  let userYaw = 0, userPitch = 0, userZoom = 1, hasInteracted = false;
+  let dragging = false, px = 0, py = 0, pinchD = 0;
+  const clampPitch = p => Math.max(-1.5, Math.min(1.5, p));   // near-vertical: look straight up at the underside
+  const clampZoom = z => Math.max(0.16, Math.min(4.5, z));    // zoom in close enough to fit under the elevated vehicle
+  canvas.addEventListener('pointerdown', e => { dragging = true; px = e.clientX; py = e.clientY; });
+  window.addEventListener('pointerup', () => dragging = false);
+  window.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    userYaw -= (e.clientX - px) * 0.005;
+    userPitch = clampPitch(userPitch + (e.clientY - py) * 0.005);
+    px = e.clientX; py = e.clientY;
+    hasInteracted = true;
+  });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    userZoom = clampZoom(userZoom * (1 + e.deltaY * 0.001));
+    hasInteracted = true;
+  }, { passive: false });
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) pinchD = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+  });
+  canvas.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                           e.touches[0].clientY - e.touches[1].clientY);
+      userZoom = clampZoom(userZoom * pinchD / d);
+      pinchD = d;
+      hasInteracted = true;
+    }
+  }, { passive: true });
+
+  function setCam(mode) {
+    camMode = mode;
+    userYaw = 0; userPitch = 0; userZoom = 1; hasInteracted = false;   // each view starts at its intended framing
+    if (mode === 'station')                     // frame the station the tracked vehicle is at / heading to
+      stationSide = carA.x >= 0 ? 1 : -1;
+  }
+
+  // ---------- Explainer chapters: jump the view + show a short description ----------
+  const CHAPTERS = [
+    { cam: 'follow',  title: 'Regional mass transit',
+      text: 'A regional mass-transit line — not a train and not a gondola. Passengers ride in light, wing-shaped cabins of 20\u201325 people that run individually along a slim, cable-supported elevated rail. A cabin departs roughly every 2 minutes, so the line moves on the order of 1,500 passengers per hour while each vehicle stays small and frequent. Because the structure is light and elevated, it can thread through terrain and built-up areas with a minimal footprint.' },
+    { cam: 'bogie',   title: 'A clamp that cannot derail',
+      text: 'Each bogie wraps around the round rail head and grips it from every side: a driven road wheel presses down on top, up-stop wheels run underneath, and guide wheels bear on the flanks. The vehicle is mechanically captured on the rail — like a roller-coaster car — so it cannot derail even under hard braking, steep grades or crosswinds. The driven wheels also turn the whole rail into one continuous traction surface, so the vehicle powers itself along the line.' },
+    { cam: 'wayside', title: 'The track',
+      text: 'Vehicles run on a twin elevated guideway — two slim round rails carried by tensioned cables strung between slender pylons spaced 120 m apart and standing roughly 10–20 m tall to follow the rolling terrain. The rails can hold gentle large-radius curves (about 3,000 m here) while the cables run as straight chords between pylons, so the clamps simply take up the small offset. Because the wings carry much of the weight at speed, the rails and cables stay light, the pylons can be widely spaced, and the line casts only a thin shadow on the ground — crossing water, roads and terrain with a minimal footprint.' },
+    { cam: 'wing',    title: 'Wings carry the load',
+      text: 'A tandem-wing layout generates aerodynamic lift as the vehicle speeds up, carrying part of its weight so the rail and cables can stay slender and inexpensive. The faster it runs, the more the wings unload the structure. The trade-off is that the vehicle behaves like a low-flying aircraft: like any wing it reacts to gusts and turbulence, which would normally force a heavier, stiffer and slower design.' },
+    { cam: 'wing',    title: 'Active turbulence cancellation',
+      text: 'This is the technology that makes a wing-borne high-speed vehicle practical. Active cancellation by Turbulence Solutions (developed by Andras Galffy) senses incoming gusts and counteracts them in real time at the wing, smoothing out the disturbances that would otherwise shake the vehicle. The result is a stable, comfortable ride at high speed with a light structure — the active aerodynamics do the work that brute-force mass and rigidity otherwise would. It is the indispensable enabler that turns Cable Glide from a concept into something rideable.' },
+    { cam: 'station', title: 'Stations & turntables',
+      text: 'At each end of the line the vehicle rolls onto a compact rotating bridge set just behind the platform. The bridge turns in place to swing the vehicle from the arrival track onto the return track — so there are no loops to build and no switch points to fail. The two tracks never actually meet: each curves to its own edge of the disc, and the bridge rotates to span the gap. Passengers board and alight at the island and side platforms while the turntable handles the direction change.' }
+  ];
+  const chBtns = Array.prototype.slice.call(document.querySelectorAll('#explain .chapters button'));
+  const chTitleEl = document.getElementById('chapterTitle');
+  const chTextEl = document.getElementById('chapterText');
+  const speedNumEl = document.getElementById('speedNum');
+  let speedShown = 0;
+  let currentChapter = -1, manualUntil = -1, tourTime = 0;   // auto-tour state
+  function selectChapter(i, manual) {
+    const c = CHAPTERS[i];
+    setCam(c.cam);
+    chTitleEl.textContent = c.title;
+    chTextEl.textContent = c.text;
+    chBtns.forEach((b, bi) => b.classList.toggle('active', bi === i));
+    currentChapter = i;
+    if (manual) manualUntil = tourTime + 9;     // a manual tap pauses the auto-advance for ~9 s
+  }
+  // which chapter should be showing, given where the tracked vehicle is along its run.
+  // Over one half-trip this naturally tells the story: Concept → Clamp → Track (waypoint pass)
+  // → Wings → Turbulence → Stations (arrival), then repeats on the return leg.
+  function desiredChapter(c) {
+    if (c.state !== 'line') return 5;            // at the station: arriving, turning or boarding
+    const ax = Math.abs(c.x);
+    if (ax < 380) return 2;                      // Track: passing the mid-line waypoint
+    const inbound = c.x * c.dir > 0;             // approaching the far station (vs. just departed)
+    if (!inbound) return ax > 950 ? 0 : 1;       // outbound: Concept → Clamp
+    if (ax > 1180) return 5;                     // inbound: set up the Stations view as it arrives
+    return ax > 950 ? 4 : 3;                     // inbound: Turbulence → Wings
+  }
+  chBtns.forEach((b, i) => b.onclick = () => selectChapter(i, true));
+  selectChapter(0, false);
+
+  // collapsible explainer panel so it never blocks the view
+  const explainEl = document.getElementById('explain'), explainToggleEl = document.getElementById('explainToggle');
+  function showExplain(open) {
+    explainEl.classList.toggle('collapsed', !open);
+    explainToggleEl.classList.toggle('show', !open);
+  }
+  document.getElementById('explainClose').onclick = () => showExplain(false);
+  explainToggleEl.onclick = () => showExplain(true);
+
+  const BASE_FOV = 55, REF_ASPECT = 1.6;   // vertical FOV tuned for landscape
+  // ---------- Postprocessing DISABLED ----------
+  // SSAO/Bloom softened the image ("out of focus"); we render directly (renderer MSAA) for a crisp
+  // picture and get depth from lighting/materials/exposure instead.
+  let composer = null;
+  window.__composer = null;
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);            // updateStyle=true: pin CSS display size to the viewport
+    const a = w / h;
+    camera.aspect = a;
+    // On narrow/portrait screens a fixed vertical FOV crops the wide scene sideways. Widen the
+    // vertical FOV to keep (roughly) the same horizontal field of view, clamped to avoid distortion.
+    if (a >= REF_ASPECT) {
+      camera.fov = BASE_FOV;
+    } else {
+      const hHalfTan = Math.tan(BASE_FOV * Math.PI / 360) * REF_ASPECT;
+      camera.fov = Math.min(2 * Math.atan(hHalfTan / a) * 180 / Math.PI, 90);
+    }
+    camera.updateProjectionMatrix();
+    if (window.__csm) window.__csm.updateFrustums();   // FOV/aspect changed → refit cascades
+    if (window.__composer) window.__composer.setSize(w, h);
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', resize);
+  resize();
+
+  // ---------- Main loop ----------
+  const clock = new THREE.Clock();
+  const camPos = new THREE.Vector3(-P_STOP - 70, 45, 100);
+  const camLook = new THREE.Vector3(-P_STOP, 10, 0);
+  let frame = 0;
+  const STATE_TXT = {
+    line: '', dwell_arr: 'at platform — alighting', creep_in: 'proceeding to the turning table',
+    pre_turn: 'on the turning table', turn: 'turning table rotating',
+    post_turn: 'aligned with the return track', creep_out: 'returning through the station',
+    dwell_dep: 'at platform — boarding'
+  };
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const cruise = 220 / 3.6;                 // fixed design cruise (~220 km/h)
+    if (window.__waterMats) for (const t of window.__waterMats) { t.offset.y += dt * 0.035; t.offset.x += dt * 0.012; }
+    if (window.__windU) window.__windU.value += dt;   // gentle tree-canopy sway
+    window.__envT = (window.__envT || 0) + dt;
+    if (window.__turbines) for (const t of window.__turbines) t.rotor.rotation.x += t.speed * dt;
+    if (window.__flocks) for (const f of window.__flocks) {
+      f.mesh.rotation.y += f.speed * dt;
+      f.mesh.position.y = f.baseY + Math.sin(window.__envT * 0.5 + f.phase) * 2.2;
+    }
+
+    for (const c of cars) stepCar(c, dt, cruise);
+    stepTables(dt);
+    // refresh world matrices now so the bogie/wing camera (which uses localToWorld) matches the
+    // pose that actually renders this frame — without this the attached views jitter at speed
+    for (const c of cars) c.root.updateMatrixWorld(true);
+
+    // bottom speed readout — actual vehicle speed in km/h, lightly smoothed so the digits don't flicker
+    if (speedNumEl) {
+      speedShown += (carA.v * 3.6 - speedShown) * Math.min(1, dt * 6);
+      speedNumEl.textContent = Math.round(speedShown);
+    }
+
+    // (shadow camera is positioned below, once the camera look-point for this frame is known)
+
+    // auto-tour: advance the chapters in step with the vehicle (Track during the mid-line pass,
+    // Stations while it is arriving / turning / boarding); a manual tap pauses the auto-advance briefly
+    tourTime += dt;
+    const want = desiredChapter(carA);
+    if (want !== currentChapter && tourTime > manualUntil) selectChapter(want, false);
+
+    // cameras — keep the vehicle exactly centred in frame in every mode
+    // dt-based smoothing (frame-rate independent) removes stutter when frame timing varies
+    let targetPos, targetLook, posRate = 6, lookRate = 1000;   // high lookRate ≈ instant → vehicle stays centred
+    const carCam = carA;
+    const focus = carCam.root.position.clone().add(new THREE.Vector3(0, 0.5, 0));   // vehicle visual centre
+    const fwd = new THREE.Vector3(Math.sin(carA.yaw), 0, Math.cos(carA.yaw));
+    if (camMode === 'follow') {
+      targetPos = carA.root.position.clone()
+        .addScaledVector(fwd, -34)
+        .add(new THREE.Vector3(0, 9, 0))
+        .addScaledVector(new THREE.Vector3(fwd.z, 0, -fwd.x), 11);
+      targetLook = focus;
+    } else if (camMode === 'bogie') {
+      targetPos = carA.root.localToWorld(new THREE.Vector3(RAIL_HALF + 2.3, 1.45, FRONT_Z + 3.4));
+      targetLook = carA.root.localToWorld(new THREE.Vector3(RAIL_HALF, 0.35, FRONT_Z + 0.2));
+      posRate = 90; lookRate = 90;
+    } else if (camMode === 'station') {
+      // clearly frame the turntable + platforms at the chosen end (vehicle arrives into this shot)
+      const s = stationSide;
+      targetPos  = new THREE.Vector3(s * 1480, 19, 50);   // frames the turntable, the under-deck workshop + platforms
+      targetLook = new THREE.Vector3(s * 1448, 6.0, 0);   // centred on the turntable / workshop mouth
+      posRate = 8; lookRate = 8;
+    } else if (camMode === 'wayside') {
+      // relocated trackside vantage: an elevated 3/4 view from the far side of the span — no longer the
+      // old head-on shot straight down the line. Frames the vehicle crossing the cable-supported section.
+      const wx = 210, wz = -66, gy = terrainH(wx, wz);
+      targetPos = new THREE.Vector3(wx, Math.max(gy + 12, 25), wz);
+      targetLook = focus;            // tracks the nearer car, centred
+      posRate = 22;
+    } else if (camMode === 'wing') {
+      // close 3/4 view framing the tandem wings
+      targetPos = carA.root.localToWorld(new THREE.Vector3(8, 4.5, 8));
+      targetLook = carA.root.localToWorld(new THREE.Vector3(0, 1.4, 0));
+      posRate = 80; lookRate = 80;
+    } else { // orbit overview
+      if (!dragging && !hasInteracted) userYaw += dt * 0.05;   // gentle auto-rotation until the user takes over
+      targetPos = focus.clone().add(new THREE.Vector3(0, 34, 70));
+      targetLook = focus;
+      posRate = 20;
+    }
+    // free-look: orbit the camera around the look target and zoom, on top of the preset
+    {
+      const Y = new THREE.Vector3(0, 1, 0);
+      // pull the camera closer as it swings under, so the orbit fits beneath the elevated vehicle
+      const under = userPitch > 0 ? 1 - 0.58 * (userPitch / 1.5) : 1;
+      const off = targetPos.clone().sub(targetLook).multiplyScalar(userZoom * under);
+      off.applyAxisAngle(Y, userYaw);
+      const right = new THREE.Vector3().crossVectors(Y, off);
+      if (right.lengthSq() > 1e-6) { right.normalize(); off.applyAxisAngle(right, userPitch); }
+      targetPos = targetLook.clone().add(off);
+    }
+    // never drop through the ground/water — lets you swing under the elevated vehicle and look up
+    const groundMin = terrainH(targetPos.x, targetPos.z) + 1.0;
+    if (targetPos.y < groundMin) targetPos.y = groundMin;
+    camPos.lerp(targetPos, 1 - Math.exp(-posRate * dt));
+    camLook.lerp(targetLook, 1 - Math.exp(-lookRate * dt));
+    camera.position.copy(camPos);
+    camera.lookAt(camLook);
+
+    // CSM (if present) fits its cascades to the view; otherwise the single sun's shadow frustum
+    // follows the view centre so shadows stay sharp around whatever is on screen.
+    if (window.__csm) { camera.updateMatrixWorld(); window.__csm.update(); }
+    else if (window.__sun) {
+      window.__sun.target.position.copy(camLook);
+      window.__sun.position.copy(camLook).addScaledVector(SUN_DIR, 1200);
+      window.__sun.target.updateMatrixWorld();
+    }
+
+    try {
+      if (window.__composer) window.__composer.render(dt);
+      else renderer.render(scene, camera);
+    } catch (e) {
+      if (!window.__renderErrShown) {
+        window.__renderErrShown = true;
+        window.__showErr('Render error: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n'));
+      }
+    }
+  }
+
+  // ---------- Enable CSM shadow receiving on every lit material ----------
+  // Must run after the whole scene is built and before the first render. Materials NOT set up would
+  // compile the non-CSM branch and mis-apply the cascade lights, so we patch them all. The tree
+  // material's wind injector is chained after CSM's (CSM only adds uniforms, so they compose).
+  if (csm) {
+    const seen = new Set();
+    scene.traverse(o => {
+      const ms = o.material; if (!ms) return;
+      (Array.isArray(ms) ? ms : [ms]).forEach(m => {
+        if (!m || seen.has(m)) return; seen.add(m);
+        if (!(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) return;
+        try {
+          csm.setupMaterial(m);
+          const csmObc = m.onBeforeCompile;
+          const extra = m.userData && m.userData.windInject;
+          if (extra) m.onBeforeCompile = function (shader, r) { csmObc.call(this, shader, r); extra(shader); };
+        } catch (e) { /* leave this material on the normal path if setup fails */ }
+      });
+    });
+  }
+
+  animate();
+  setTimeout(() => { const b = document.getElementById('loadBadge'); b.style.opacity = 0; setTimeout(() => b.remove(), 700); }, 1200);
+}
+
+// ---- bootstrap: wait for DOM + THREE (with CDN fallback), check WebGL, then start ----
+(function boot() {
+  function webglOK() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(c.getContext('webgl') || c.getContext('experimental-webgl'));
+    } catch (e) { return false; }
+  }
+  function tryStart(attempt) {
+    if (typeof THREE === 'undefined') {
+      if (attempt > 60) { window.__showErr('three.js did not load (timeout) — check the network / content blocker.'); return; }
+      setTimeout(() => tryStart(attempt + 1), 250);
+      return;
+    }
+    if (!webglOK()) { window.__showErr('WebGL is not available in this browser/view. Try opening the file in a regular browser tab.'); return; }
+    launch();   // fully self-contained — sky, environment, water and shadows are all built in-engine
+  }
+  function launch() {
+    if (window.__launched) return;
+    window.__launched = true;
+    try { startApp(); }
+    catch (e) { window.__showErr('Startup error: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 5).join('\n')); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => tryStart(0));
+  else tryStart(0);
+})();
+</script>
+</body>
+</html>
