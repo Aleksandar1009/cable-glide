@@ -1687,7 +1687,7 @@ function startApp() {
     st.position.set(side * HALL_C, 0, 0);
     scene.add(st);
     const gy = 1.6;
-    const SO = { x0: 5.3, x1: 10.9, z0: 3.4, z1: 5.9 };   // stair opening cut in the island slab (a clear bay under the +z canopy)
+    const SO = { x0: -10.9, x1: -5.3, z0: 3.4, z1: 5.9 };  // stair opening cut in the island slab — on the side away from the under-station road
 
     // island platform between the two tracks + a side platform outboard of each track,
     // leaving the track decks (z = ±TRACK_Z) clear to run straight through the hall
@@ -1717,11 +1717,15 @@ function startApp() {
     // ----- stair from the island down to street level, through the slab opening (under the +z canopy) -----
     {
       const STREET_Y = 0.9;
-      const zMid = (SO.z0 + SO.z1) / 2;                 // spine between the two flights
-      const zA = SO.z0 + 0.7, zB = SO.z1 - 0.7;         // the two flight centre-lines
+      const zMid = (SO.z0 + SO.z1) / 2;                 // spine between the two switchback lanes
+      const zA = SO.z0 + 0.7, zB = SO.z1 - 0.7;         // the two flight lanes
       const flW = (SO.z1 - SO.z0) / 2 - 0.2;            // flight (tread) width
       const xa = SO.x0 + 0.3, xb = SO.x1 - 0.5;         // flight x extents inside the opening
-      const yMid = (DECK_TOP + STREET_Y) / 2;           // mid-landing level
+      // realistic switchback: pick enough flights that each step keeps a sane riser/tread; lanes alternate
+      const RISE = 0.18, total = DECK_TOP - STREET_Y;
+      const nFl = Math.max(2, Math.ceil(total / 2.7)), dropF = total / nFl;
+      const nStep = Math.max(4, Math.round(dropF / RISE));
+      const lanes = [zA, zB];
       const flight = (x0, x1, yTop, yBot, zc, n) => {
         const dx = (x1 - x0) / n, dy = (yBot - yTop) / n;
         for (let i = 0; i < n; i++) {
@@ -1729,12 +1733,23 @@ function startApp() {
           box(Math.abs(dx) + 0.05, 0.16, flW, concMat, sx, sy - 0.08, zc, st, true);                              // tread
           box(0.06, Math.abs(dy) + 0.16, flW, concMat, x0 + i * dx, sy - Math.abs(dy) / 2 - 0.04, zc, st, false); // riser
         }
+        // solid sloped stringer under the treads so the flight reads as supported, not floating
+        const mx = (x0 + x1) / 2, my = (yTop + yBot) / 2 - 0.33, run = Math.abs(x1 - x0), drop = Math.abs(yTop - yBot);
+        const sl = box(Math.hypot(run, drop) + 0.1, 0.34, flW + 0.06, concDark, mx, my, zc, st, true);
+        sl.rotation.z = Math.atan2(yBot - yTop, x1 - x0);
       };
-      flight(xa, xb, DECK_TOP, yMid, zA, 8);            // upper flight: down along +x on the near-z side
-      flight(xb, xa, yMid, STREET_Y, zB, 8);            // lower flight: switches back along -x on the far-z side
-      box(1.5, 0.18, SO.z1 - SO.z0, concMat, xb + 0.45, yMid - 0.09, zMid, st, true);                 // mid landing (far-x end)
+      let yT = DECK_TOP;
+      for (let f = 0; f < nFl; f++) {
+        const ltr = f % 2 === 0, x0 = ltr ? xa : xb, x1 = ltr ? xb : xa, zc = lanes[f % 2];
+        const yB = Math.max(STREET_Y, yT - dropF);
+        flight(x0, x1, yT, yB, zc, nStep);
+        if (f < nFl - 1) box(2.0, 0.22, SO.z1 - SO.z0, concMat, x1 + (ltr ? 0.5 : -0.5), yB - 0.11, zMid, st, true); // half-landing at each turn
+        yT = yB;
+      }
+      // corner columns from the ground up to the deck so the whole stair shaft is grounded
+      for (const cxp of [xa - 0.4, xb + 0.4]) for (const czp of [SO.z0 + 0.2, SO.z1 - 0.2])
+        st.add(strut(new THREE.Vector3(cxp, gy - 1, czp), new THREE.Vector3(cxp, DECK_TOP - 0.5, czp), 0.22, 0.18, concMat, true));
       box(2.2, 0.2, SO.z1 - SO.z0 + 0.8, concMat, xa - 0.6, STREET_Y - 0.1, zMid, st, true);          // concourse pad at street level
-      box(xb - xa + 1.2, 1.0, 0.16, darkMat, (xa + xb) / 2 + 0.1, yMid + 0.35, zMid, st, true);       // spine wall between flights
       // glass balustrade around the opening (the near-z corner of the near-x end is left open as the entry)
       const bal = (lx, lz, cx, cz) => {
         box(lx, 0.95, lz, glassMat, cx, DECK_TOP + 0.48, cz, st, false);
