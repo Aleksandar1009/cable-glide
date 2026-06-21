@@ -2645,9 +2645,9 @@ function startApp() {
     const fwd = new THREE.Vector3(Math.sin(carA.yaw), 0, Math.cos(carA.yaw));
     if (camMode === 'follow') {
       targetPos = carA.root.position.clone()
-        .addScaledVector(fwd, -34)
-        .add(new THREE.Vector3(0, 9, 0))
-        .addScaledVector(new THREE.Vector3(fwd.z, 0, -fwd.x), 11);
+        .addScaledVector(fwd, -32)
+        .add(new THREE.Vector3(0, 10, 0))
+        .addScaledVector(new THREE.Vector3(fwd.z, 0, -fwd.x), -16);   // outboard side, clear of the central canopy roof
       targetLook = focus;
     } else if (camMode === 'bogie') {
       targetPos = carA.root.localToWorld(new THREE.Vector3(RAIL_HALF + 2.3, 1.45, FRONT_Z + 3.4));
