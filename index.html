@@ -130,25 +130,115 @@
     #explain { left: 8px; top: calc(8px + env(safe-area-inset-top)); width: 232px; padding: 8px 10px 9px; max-height: calc(100vh - 16px); }
     #explainToggle { left: 8px; }
   }
+  /* ---- About us panel (top-right) ---- */
+  #about {
+    position: fixed; right: 16px; top: 16px; z-index: 10;
+    background: rgba(16, 22, 26, 0.42); color: #eef2f4; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 11px; padding: 9px 13px 12px; width: 222px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box;
+  }
+  .ab-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #about h1 { font-size: 12.5px; font-weight: 600; margin: 0; color: #f3f6f7; }
+  #aboutClose { background: transparent; border: none; color: #9fb2bd; font-size: 17px; line-height: 1; cursor: pointer; padding: 0 2px; }
+  #aboutClose:hover { color: #fff; }
+  #about .grp { margin-top: 9px; }
+  #about .ab-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  #about .ab-tabs button {
+    flex: 1 1 auto; text-align: center; white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05);
+    color: #dfe8ec; font-size: 10.5px; padding: 5px 7px; border-radius: 7px; cursor: pointer;
+  }
+  #about .ab-tabs button:hover { background: rgba(255,255,255,0.13); }
+  #about .ab-tabs button.active { background: #d85a30; border-color: #d85a30; color: #fff; }
+  #about .ab-pane { margin-top: 10px; }
+  #about .ab-pane[hidden] { display: none; }
+  #about .ab-pane > .grp:first-child { margin-top: 0; }
+  #about .ab-pane p { font-size: 11.5px; line-height: 1.5; color: #c8d4db; margin: 0 0 8px; }
+  #about .ab-pane p:last-child { margin-bottom: 0; }
+  #about .muted { color: #9fb2bd; font-style: italic; }
+  #about .role { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: #9fb2bd; margin-bottom: 2px; }
+  #about .nm { font-size: 12px; color: #e7eef1; line-height: 1.5; }
+  #about .person { margin-bottom: 6px; }
+  #about .person:last-child { margin-bottom: 0; }
+  #about .pn { font-size: 12px; color: #e7eef1; }
+  #about .cred { font-size: 10px; color: #ffb98a; letter-spacing: 0.3px; margin-left: 4px; }
+  #about .disc { font-size: 10.5px; color: #9fb2bd; line-height: 1.3; }
+  #about a { color: #ffb98a; text-decoration: none; }
+  #about a:hover { text-decoration: underline; }
+  #aboutToggle {
+    position: fixed; right: 16px; top: calc(16px + env(safe-area-inset-top)); z-index: 11;
+    display: none; background: rgba(16,22,26,0.6); color: #eef2f4;
+    border: 1px solid rgba(255,255,255,0.16); border-radius: 999px;
+    padding: 8px 14px; font-size: 12px; cursor: pointer; backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+  }
+  #aboutToggle.show { display: block; }
+  #about.collapsed { display: none; }
+  @media (max-width: 560px), (max-height: 480px) {
+    #about { right: 8px; top: calc(8px + env(safe-area-inset-top)); width: 200px; padding: 8px 11px 10px; max-height: calc(100vh - 16px); }
+    #aboutToggle { right: 8px; }
+  }
 </style>
 </head>
 <body>
 <canvas id="scene"></canvas>
 <div id="loadBadge">Clamping the bogies onto the rails…</div>
 
-<button id="explainToggle" aria-label="Show explanation">&#9432;&nbsp; How it works</button>
+<button id="explainToggle" aria-label="Show vision">&#9432;&nbsp; Vision</button>
+
+<button id="aboutToggle" aria-label="Show about us">About us</button>
+<div id="about">
+  <div class="ab-head">
+    <h1>About us</h1>
+    <button id="aboutClose" aria-label="Hide">&times;</button>
+  </div>
+  <div class="ab-tabs">
+    <button data-ab="project" class="active">Project Cable Glide</button>
+    <button data-ab="tech">Technology</button>
+    <button data-ab="members">Project members</button>
+  </div>
+
+  <div class="ab-pane" data-pane="project">
+    <p>Cable Glide is a regional high-speed transport system. Wing-supported cabins ride two slim rails carried on cables between slender pylons, crossing terrain, water and roads with a minimal footprint.</p>
+    <p>Our goal is to bring high-speed connections to routes where conventional high-speed rail is too costly or impossible to build — not competing with mainline trains but complementing them, with light, inexpensive, elevated infrastructure and frequent service.</p>
+  </div>
+
+  <div class="ab-pane" data-pane="tech" hidden>
+    <p>The vehicle's wings carry much of the cabin weight in flight, removing vertical load from the track and allowing high speed on slender infrastructure. An onboard turbulence-cancelling system keeps the ride smooth and holds vehicle–cable forces within safe limits.</p>
+    <p>Read more: <a href="Feasibility_Study_Cable_Glide.pdf" target="_blank" rel="noopener">Feasibility study (PDF)</a> &middot; <a href="Article_Cable_Glide.pdf" target="_blank" rel="noopener">Technical paper (PDF)</a></p>
+  </div>
+
+  <div class="ab-pane" data-pane="members" hidden>
+    <div class="grp">
+      <div class="role">Project members</div>
+      <div class="person"><span class="pn">Aleksandar Zhelyazkov</span><span class="cred">PhD</span><div class="disc">Structural Engineer</div></div>
+      <div class="person"><span class="pn">Moritz Wenzel</span><span class="cred">PhD</span><div class="disc">Structural Engineer</div></div>
+      <div class="person"><span class="pn">Andras Gallffy</span><span class="cred">DI</span><div class="disc">Aeronautics Engineer</div></div>
+    </div>
+    <div class="grp">
+      <div class="role">Advisor</div>
+      <div class="person"><span class="pn">Johannes Pammer</span><span class="cred">DI</span><div class="disc">Mechanical Engineer</div></div>
+    </div>
+    <div class="grp">
+      <div class="role">Contact</div>
+      <div class="nm"><a href="mailto:zhelyazkov@cableglide.at">zhelyazkov@cableglide.at</a></div>
+    </div>
+  </div>
+</div>
 
 <div id="explain">
   <div class="ex-head">
-    <h1>Cable Glide — how it works</h1>
+    <h1>Project Cable Glide</h1>
     <button id="explainClose" aria-label="Hide">&times;</button>
   </div>
   <div class="chapters">
     <button data-ch="0" class="active">Concept</button>
-    <button data-ch="1">Clamp</button>
-    <button data-ch="2">Track</button>
-    <button data-ch="3">Wings</button>
-    <button data-ch="4">Turbulence</button>
+    <button data-ch="1">Wings</button>
+    <button data-ch="2">Propulsion</button>
+    <button data-ch="3">Track</button>
+    <button data-ch="4">Ride</button>
     <button data-ch="5">Stations</button>
   </div>
   <div id="chapterTitle"></div>
@@ -319,7 +409,7 @@ function startApp() {
   }
 
   // ---------- Alignment constants ----------
-  // Two parallel tracks: eastbound (dir +1) runs on z = -TRACK_Z, westbound on z = +TRACK_Z.
+  // Two parallel tracks: eastbound (dir +1) runs on z = +TRACK_Z, westbound on z = -TRACK_Z (right-hand running).
   const TRACK_Z   = 12.0;    // track centreline offset (opposite directions further apart)
   const RAIL_HALF = 2.6;     // half gauge within one track (rails under the wings)
   const HEAD_R    = 0.075;   // round rail head (patent cross-section)
@@ -406,8 +496,8 @@ function startApp() {
   }
   // two car roads, each crossing under the line in a different span (run in z)
   const ROADS = [
-    { x: 300, half: 11.5, lanes: 6, base: 6.0, ph: 0.5, z0: -1300, z1: 1300, amp: 2.0, sw: 0.014, cx: 90, cw: 0.0016, cph: 0.4 },
-    { x: -650, half: 8.0, lanes: 4, base: 5.0, ph: 2.1, z0: -1300, z1: 1300, amp: 1.6, sw: 0.018, cx: 62, cw: 0.0019, cph: 2.0 }
+    { x: 300, half: 11.5, lanes: 6, base: 6.0, ph: 0.5, z0: -115, z1: 115, amp: 2.0, sw: 0.014, cx: 90, cw: 0.0016, cph: 0.4 },
+    { x: -650, half: 8.0, lanes: 4, base: 5.0, ph: 2.1, z0: -115, z1: 115, amp: 1.6, sw: 0.018, cx: 62, cw: 0.0019, cph: 2.0 }
   ];
   // roads run long in z (ends off the visible terrain) and meander gently & smoothly in x (large-radius
   // plan curves, R≈4000 m). roadX = plan centreline, roadXSlope = d(roadX)/dz for the ribbon/heading.
@@ -447,9 +537,14 @@ function startApp() {
     // turntable/depot appear to float). Blended at the edges so it meets the surrounding terrain smoothly.
     {
       const ax = Math.abs(x), az = Math.abs(z);
-      const sx = Math.min(Math.max((ax - 1290) / 55, 0), 1);     // 0 before the station → 1 inside
-      const sz = 1 - Math.min(Math.max((az - 84) / 26, 0), 1);   // 1 within the footprint → 0 outside
-      const w = (sx * sx * (3 - 2 * sx)) * (sz * sz * (3 - 2 * sz));
+      const S = t => { t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
+      // A levelled apron the station, depot AND the adjacent houses stand on. Widened in z to reach the
+      // residential band (|z|≈82-155) and bounded in x so only the station's surroundings are flattened —
+      // beyond the neighbourhood the ground eases back to its natural rolling/rugged form.
+      const padIn  = S((ax - 1240) / 65);          // level ground begins ~1305 (covers the inboard houses)
+      const padOut = 1 - S((ax - 1610) / 95);      // and ends past the houses (~1705), behind the station
+      const padZ   = 1 - S((az - 150) / 55);       // flat out to |z|≈150, easing to natural ground by ≈205
+      const w = padIn * padOut * padZ;
       if (w > 0.001) h = h * (1 - w) + 1.4 * w;
     }
     // grade the ground to the road level: a flat carriageway + verge, then a smooth
@@ -464,7 +559,7 @@ function startApp() {
         let gz = 1;                                      // taper the grading past the road ends
         if (z < rd.z0) gz = 1 - Math.min(1, (rd.z0 - z) / 34);
         else if (z > rd.z1) gz = 1 - Math.min(1, (z - rd.z1) / 34);
-        // don't carve deep canyons through tall hills — let the hill bury the road (hides the far ends)
+        // don't carve deep canyons through tall hills — let the hill bury the road
         let cut = 1;
         if (h > ry + 16) cut = Math.max(0, 1 - (h - ry - 16) / 22);
         let w = gz * cut; w = w * w * (3 - 2 * w);
@@ -989,7 +1084,7 @@ function startApp() {
       const spots = [-0.7, -0.25, 0.15, 0.55, 0.85];
       spots.forEach((tz, i) => {
         const lx = lanesX[i % lanesX.length];
-        const z = -160 + 320 * (tz * 0.5 + 0.5);
+        const z = rd.z0 + (rd.z1 - rd.z0) * (tz * 0.5 + 0.5);
         const sx = roadXSlope(rd, z), nrm = Math.hypot(1, sx), ex = 1 / nrm, ez = -sx / nrm;
         const car = new THREE.Group();
         car.position.set(roadX(rd, z) + lx * ex, roadY(rd, z) + 0.5, z + lx * ez);
@@ -1189,6 +1284,50 @@ function startApp() {
    } catch (e) { console.warn('Farmsteads skipped:', e.message); }
   })();
 
+  // ---- residential houses clustered a respectful distance from each station ----
+  // envFree() already forbids anything within ~75 m of the line near a station (|x|>1320),
+  // so these sit back from the platforms rather than crowding them.
+  (function buildHouses() {
+   try {
+    function gable(w, d, rh, mat, x, y, z, ry) {
+      const sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(0, rh); sh.lineTo(-w / 2, 0);
+      const g = new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: false }); g.translate(0, 0, -d / 2); g.computeVertexNormals();
+      const me = new THREE.Mesh(g, mat); me.position.set(x, y, z); me.rotation.y = ry || 0;
+      me.castShadow = me.receiveShadow = true; scene.add(me); return me;
+    }
+    const walls = [0xe9e3d5, 0xf0ead8, 0xdfe6e6, 0xeadfce, 0xe5d9c6, 0xd9e0e8].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 }));
+    const roofs = [0xa14a37, 0x8c4232, 0x6f4a3a, 0x5a5f66, 0x7a4636].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
+    const door = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.7 });
+    const chim = new THREE.MeshStandardMaterial({ color: 0xb0a596, roughness: 0.9 });
+    function house(cx, cz, rot, k) {
+      const gy = terrainH(cx, cz), c = Math.cos(rot), s = Math.sin(rot);
+      const P = (lx, lz) => [cx + lx * c - lz * s, cz + lx * s + lz * c];
+      const wall = walls[k % walls.length], roof = roofs[(k * 2 + 1) % roofs.length];
+      const w = 6 + (k % 3), d = 5 + (k % 2) * 1.5, h = 3 + (k % 2) * 0.6;
+      let p = P(0, 0); box(w, h, d, wall, p[0], gy + h / 2, p[1], scene, true); gable(w + 0.4, d + 0.2, 2.0 + (k % 2) * 0.5, roof, p[0], gy + h, p[1], rot);
+      p = P(0, d / 2 + 0.07); box(1.0, 2.0, 0.14, door, p[0], gy + 1.0, p[1], scene, false);     // front door
+      p = P(w * 0.3, 0); box(0.6, 1.4, 0.6, chim, p[0], gy + h + 1.0, p[1], scene, true);          // chimney
+      if (k % 2 === 0) { p = P(w * 0.5 + 2.4, -d * 0.2); box(3.2, 2.2, 3.0, wall, p[0], gy + 1.1, p[1], scene, true); gable(3.4, 3.1, 0.8, roof, p[0], gy + 2.2, p[1], rot); } // garage
+    }
+    const placed = [];
+    function tryPlace(x, z, rot, k) {
+      if (Math.abs(z) < 82) return false;                                  // keep clear of the platforms
+      if (!envFree(x, z, 12)) return false;
+      if (placed.some(q => Math.hypot(q[0] - x, q[1] - z) < 17)) return false;
+      house(x, z, rot, k); placed.push([x, z]); return true;
+    }
+    let k = 0;
+    for (const sx of [-1, 1]) {
+      const bx = sx * TABLE_X;
+      for (const sz of [-1, 1]) for (let i = 0; i < 6; i++) {
+        const x = bx - 150 + i * 46 + (Math.random() - 0.5) * 16;
+        const z = sz * (108 + (i % 2) * 34) + (Math.random() - 0.5) * 22;
+        if (tryPlace(x, z, Math.random() * Math.PI * 2, k)) k++;
+      }
+    }
+   } catch (e) { console.warn('Houses skipped:', e.message); }
+  })();
+
   // ---- wind turbines on the far hills (slowly rotating) ----
   (function buildTurbines() {
    try {
@@ -1333,31 +1472,36 @@ function startApp() {
     }
   }
 
-  // ---------- Cable clamps (rail-to-cable connectors, every 8 m along all four rails) ----------
-  // The defining "clamp that cannot derail" detail. (They are red and were never the yellow line —
-  // that was a specular reflection, fixed via the satin metals + sun-free environment map.)
+  // ---------- Cable clamps (rail-to-cable connectors, every 8 m) ----------
+  // Each rail seats onto its TWO carrying cables: a saddle spans both ropes, a collar clamps each rope,
+  // and a stem ties the saddle up to the rail head — the load path rail -> clamp -> both cables is visible.
   (function buildClamps() {
     const xs = [];
     for (let x = -CABLE_X + 4; x < CABLE_X - 2; x += 8) xs.push(x);
-    const nTot = xs.length * 4;
-    const hanger = new THREE.InstancedMesh(roundedBoxGeo(0.16, 1, 0.6, 0.07), redMat, nTot);
-    const collar = new THREE.InstancedMesh(roundedBoxGeo(0.42, 0.2, 0.34, 0.09), redMat, nTot);
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion();
-    const UP = new THREE.Vector3(0, 1, 0), q0 = new THREE.Quaternion();
-    let k = 0;
+    const nTot = xs.length * RAIL_ZS.length, LAT = 0.24;          // LAT = half-spacing of the two ropes
+    const stem   = new THREE.InstancedMesh(roundedBoxGeo(0.14, 1, 0.18, 0.05), redMat, nTot);            // rail -> saddle
+    const saddle = new THREE.InstancedMesh(roundedBoxGeo(0.20, 0.16, 2 * LAT + 0.22, 0.05), redMat, nTot); // spans both ropes
+    const capGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.26, 10); capGeo.rotateZ(Math.PI / 2);          // collar axis along x (rope direction)
+    const cap    = new THREE.InstancedMesh(capGeo, redMat, nTot * 2);                                      // clamps each rope
+    [stem, saddle, cap].forEach(im => { im.castShadow = true; });
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), q0 = new THREE.Quaternion();
+    const UP = new THREE.Vector3(0, 1, 0), ONE = new THREE.Vector3(1, 1, 1);
+    let k = 0, c = 0;
     for (const rz of RAIL_ZS) for (const x of xs) {
-      const zRail = rz + curveZ(x), zCab = rz + curveChord(x);   // rail follows the curve, cable the chord
-      const top = trackY(x) - 0.22, bot = trackY(x) - sagGap(x);
-      const a = new THREE.Vector3(x, top, zRail), b = new THREE.Vector3(x, bot, zCab);
+      const railY = trackY(x), zRail = rz + curveZ(x);
+      const cabY = trackY(x) - sagGap(x), zCab = rz + curveChord(x);   // rope-pair centreline (ropes at zCab ± LAT)
+      // saddle seated just on top of the two ropes
+      m.compose(new THREE.Vector3(x, cabY + 0.12, zCab), q0, ONE); saddle.setMatrixAt(k, m);
+      // stem bridging the rail head down to the saddle (tilts to take up the small rail/chord offset)
+      const a = new THREE.Vector3(x, railY - 0.18, zRail), b = new THREE.Vector3(x, cabY + 0.16, zCab);
       const dir = b.clone().sub(a), len = dir.length();
-      q.setFromUnitVectors(UP, dir.clone().normalize());          // tilt the hanger to bridge the offset
-      m.compose(a.clone().add(b).multiplyScalar(0.5), q, new THREE.Vector3(1, len, 1));
-      hanger.setMatrixAt(k, m);
-      m.compose(new THREE.Vector3(x, trackY(x) - 0.14, zRail), q0, new THREE.Vector3(1, 1, 1));
-      collar.setMatrixAt(k, m);
+      q.setFromUnitVectors(UP, dir.clone().normalize());
+      m.compose(a.clone().add(b).multiplyScalar(0.5), q, new THREE.Vector3(1, len, 1)); stem.setMatrixAt(k, m);
+      // a collar clamping each of the two ropes — sits right on the rope, showing contact
+      for (const s of [-1, 1]) { m.compose(new THREE.Vector3(x, cabY, zCab + s * LAT), q0, ONE); cap.setMatrixAt(c++, m); }
       k++;
     }
-    scene.add(hanger, collar);
+    scene.add(stem, saddle, cap);
   })();
 
   // ---------- Pylons every 100 m (separate pylon per track) ----------
@@ -1367,13 +1511,18 @@ function startApp() {
       const tz = tz0 + curveZ(x);                 // pylon sits under the curved rail
       const base = new THREE.Vector3(x, terrainH(x, tz) - 1.2, tz);
       const head = new THREE.Vector3(x, yRail - 2.4, tz);
-      scene.add(strut(base, head, 0.66, 0.46, pylonMat, true));
-      const arm = box(1.1, 0.55, 2 * RAIL_HALF + 1.6, pylonMat, x, yRail - 2.4, tz, scene, true);
+      // at the very ends the pylon would stand inside the anchor abutment block, so omit its shaft
+      // (the concrete block carries the rail there); the rail-seat arm + saddle below still remain
+      const atEnd = Math.abs(x) >= CABLE_X - 1;
+      if (!atEnd) scene.add(strut(base, head, 0.66, 0.46, pylonMat, true));
+      // for the end pylons, nudge the remaining top parts toward the block centre so they sit within it
+      const xTop = atEnd ? x + Math.sign(x) * 3 : x;
+      const arm = box(1.1, 0.55, 2 * RAIL_HALF + 1.6, pylonMat, xTop, yRail - 2.4, tz, scene, true);
       arm.castShadow = true;
       for (const rz of [tz - RAIL_HALF, tz + RAIL_HALF]) {
-        scene.add(strut(new THREE.Vector3(x, yRail - 2.15, rz),
-                        new THREE.Vector3(x, yRail - 0.62, rz), 0.2, 0.16, pylonMat, false));
-        box(0.7, 0.2, 0.9, pylonMat, x, yRail - 0.52, rz, scene, false);
+        scene.add(strut(new THREE.Vector3(xTop, yRail - 2.15, rz),
+                        new THREE.Vector3(xTop, yRail - 0.62, rz), 0.2, 0.16, pylonMat, false));
+        box(0.7, 0.2, 0.9, pylonMat, xTop, yRail - 0.52, rz, scene, false);
       }
     }
   }
@@ -1490,7 +1639,7 @@ function startApp() {
   }
   for (const side of [-1, 1]) {
     for (const trk of [-1, 1]) {
-      sweepDeck(side, trk, 1200, X_RIM, DECK_W, 0.5);   // one smooth deck per direction, anchor → its rim connection
+      sweepDeck(side, trk, CABLE_X, X_RIM, DECK_W, 0.5);   // one smooth deck per direction, anchor → its rim connection
       // piers every ~30 m, but not inside the station hall (platforms carry that span)
       for (let xx = 1212; xx < X_RIM - 6; xx += 30) {
         if (xx > 1374 && xx < 1422) continue;
@@ -1500,7 +1649,7 @@ function startApp() {
         box(1.9, 0.8, DECK_W - 1.4, concMat, wx, trackY(xx) - 3.0, zc, scene, true);
       }
       // smooth continuous plinth wall under each of the two rails, to the rim
-      for (const rs of [-RAIL_HALF, RAIL_HALF]) sweepWall(side, trk, rs, 1200, X_RIM, 0.34);
+      for (const rs of [-RAIL_HALF, RAIL_HALF]) sweepWall(side, trk, rs, CABLE_X, X_RIM, 0.34);
     }
     // fill the throat between the two decks as they converge toward the turntable — without this
     // the wedge between the curving decks is open to the ground
@@ -1604,19 +1753,19 @@ function startApp() {
       for (let xi = -2; xi <= 2; xi++) {
         st.add(strut(new THREE.Vector3(xi * 9.5, gy - 0.5, colZ),
                      new THREE.Vector3(xi * 9.5, ROOF_Y, colZ), 0.4, 0.32, pylonMat, true));
-        // cantilever bracket: column top out under the roof tip
+        // cantilever bracket: column top out under the (shortened) roof tip — stops short of the track
         st.add(strut(new THREE.Vector3(xi * 9.5, ROOF_Y - 0.2, colZ),
-                     new THREE.Vector3(xi * 9.5, ROOF_Y + 1.05, sgn * (HALL_W + 0.2)), 0.12, 0.08, steelDark, false));
-        // short back-stay over the island
+                     new THREE.Vector3(xi * 9.5, ROOF_Y + 0.6, sgn * 8.8), 0.12, 0.08, steelDark, false));
+        // back-stay over the island, out to the extended inboard edge
         st.add(strut(new THREE.Vector3(xi * 9.5, ROOF_Y - 0.2, colZ),
-                     new THREE.Vector3(xi * 9.5, ROOF_Y + 0.3, sgn * (COL_Z - 3.5)), 0.1, 0.07, steelDark, false));
+                     new THREE.Vector3(xi * 9.5, ROOF_Y + 0.3, sgn * 1.5), 0.1, 0.07, steelDark, false));
       }
       // longitudinal beam on the column tops
       box(HALL_LEN + 5, 0.5, 0.6, pylonMat, 0, ROOF_Y - 0.05, colZ, st, true);
 
-      // cantilever roof plane: from just over the island out past the outer rail, tilted up
-      const zIn = sgn * (COL_Z - 3.5), zOut = sgn * (HALL_W + 0.5);
-      const yIn = ROOF_Y + 0.25, yOut = ROOF_Y + 1.25;
+      // cantilever roof plane: extended 1 m further inward over the island; eave still short of the track
+      const zIn = sgn * 1.5, zOut = sgn * 9.0;
+      const yIn = ROOF_Y + 0.25, yOut = ROOF_Y + 0.7;
       const wz = Math.abs(zOut - zIn), zc = (zIn + zOut) / 2, yc = (yIn + yOut) / 2;
       const roof = box(HALL_LEN + 6, 0.26, wz, steelRoofMat, 0, yc, zc, st, true);
       roof.rotation.x = -Math.atan2(yOut - yIn, zOut - zIn);
@@ -1628,8 +1777,8 @@ function startApp() {
       fascia.position.set(0, yOut - 0.1, zOut + 0.02 * sgn);
       fascia.rotation.y = sgn > 0 ? 0 : Math.PI;
       st.add(fascia);
-      // light strip under each canopy, over its track
-      box(HALL_LEN - 4, 0.08, 0.5, lightMat, 0, ROOF_Y - 0.4, sgn * TRACK_Z, st, false);
+      // light strip under each canopy, over the platform edge (the canopy no longer reaches the track)
+      box(HALL_LEN - 4, 0.08, 0.5, lightMat, 0, ROOF_Y - 0.4, sgn * 7.0, st, false);
     }
 
     // route signage on totems over the island (in the open central spine)
@@ -1661,29 +1810,7 @@ function startApp() {
       for (const cx of [-1.18, 1.18]) for (const cz of [-1.18, 1.18])                // corner posts → reads as a shaft
         box(0.12, DECK_TOP - gy + 3.4, 0.12, steelDark, cx, (DECK_TOP + gy) / 2 + 1.7, LIFT_Z + cz, st, false);
     }
-    // people on the platforms
-    (function people() {
-      const n = 26;
-      const bodies = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.11, 0.13, 0.95, 7),
-        new THREE.MeshStandardMaterial({ color: 0xffffff }), n);
-      const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.085, 8, 7),
-        new THREE.MeshStandardMaterial({ color: 0xd9b08c }), n);
-      const m = new THREE.Matrix4(), q = new THREE.Quaternion();
-      const palette = [0x5a7d9a, 0x9a5a5a, 0x6a8a5d, 0x8a7a5d, 0x55606b, 0xa3744f, 0x7a5a8a];
-      for (let i = 0; i < n; i++) {
-        const lane = Math.random();
-        const z = lane < 0.6 ? (Math.random() - 0.5) * 2 * (ISLAND_HALF - 0.6)
-                : (Math.random() < 0.5 ? 1 : -1) * (TRACK_Z + 3.9 + 0.5 + Math.random() * (HALL_W - TRACK_Z - 3.9 - 1.0));
-        const x = (Math.random() - 0.5) * (HALL_LEN - 6);
-        m.compose(new THREE.Vector3(x, DECK_TOP + 0.48, z), q, new THREE.Vector3(1, 1, 1));
-        bodies.setMatrixAt(i, m);
-        bodies.setColorAt(i, new THREE.Color(palette[i % palette.length]));
-        m.compose(new THREE.Vector3(x, DECK_TOP + 1.05, z), q, new THREE.Vector3(1, 1, 1));
-        heads.setMatrixAt(i, m);
-      }
-      bodies.castShadow = true;
-      st.add(bodies, heads);
-    })();
+    // (platform people removed)
   }
 
   // ---------- Turning tables behind each station ----------
@@ -1836,8 +1963,8 @@ function startApp() {
 
     // alignment angles: which way the bridge points to meet each track
     const S = side;
-    const dirEntry = [S * Math.cos(DELTA), S * Math.sin(DELTA)];   // P_A → centre (x,z)
-    const dirExit  = [-S * Math.cos(DELTA), S * Math.sin(DELTA)];  // centre → P_B (x,z)
+    const dirEntry = [S * Math.cos(DELTA), -S * Math.sin(DELTA)];   // P_A → centre (x,z); z flipped for right-hand running
+    const dirExit  = [-S * Math.cos(DELTA), -S * Math.sin(DELTA)];  // centre → P_B (x,z); z flipped for right-hand running
     const yawEntry = Math.atan2(dirEntry[0], dirEntry[1]);
     const yawExit  = Math.atan2(dirExit[0], dirExit[1]);
     const bridgeA  = Math.atan2(-dirEntry[1], dirEntry[0]);        // deck rotation aligning the bridge to track A
@@ -1854,9 +1981,9 @@ function startApp() {
     // restricts a rule to one turntable. Geometry is centred, so scaling the long axis trims/extends
     // the piece equally at both ends.
     const rules = [
-      { name: 'Bridge girder (N)', delta: -1.3 },             // both turntables
-      { name: 'Bridge girder (S)', delta: +0.8 },             // both turntables
-      { name: 'Bridge rail (N)', side: -1, delta: -1.3 },     // West turntable only (the rail last referred to)
+      { name: 'Bridge girder (N)', delta: +0.8 },             // both turntables (N↔S swapped for reversed running)
+      { name: 'Bridge girder (S)', delta: -1.3 },             // both turntables (N↔S swapped for reversed running)
+      { name: 'Bridge rail (S)', side: -1, delta: -1.3 },     // West turntable only (moved N→S with the reversed swing)
     ];
     for (const m of tableParts) {
       const p = m.userData.part;
@@ -1871,7 +1998,7 @@ function startApp() {
     }
   })();
   function tableAt(side) { return tables[side > 0 ? 1 : 0]; }
-  function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % (2 * Math.PI)) - Math.PI; return a + d * t; }
+  function lerpAngle(a, b, t) { const T = 2 * Math.PI; let d = (((b - a + Math.PI) % T) + T) % T - Math.PI; return a + d * t; }
 
   // ---------- Station surroundings: an under-station path with sidewalks + a bus stop ----------
   (function buildStationArea() {
@@ -1889,7 +2016,7 @@ function startApp() {
     const signMat  = new THREE.MeshStandardMaterial({ color: 0x2f6fb0, roughness: 0.6 });
     for (const side of [-1, 1]) {
       const px = side * HALL_C + 4.75;                 // threads between the station columns/piers
-      const z0 = -460, z1 = 460;
+      const z0 = -215, z1 = 215;                       // reaches well into the lowland so the end isn't abrupt, but stays short of the hills (which rise past |z|≈230)
       ribbon(px, z0, z1, 2.0, asphaltMat, 0.06);                                   // 4 m asphalt path under the station
       for (const so of [-3.2, 3.2]) ribbon(px + so, z0, z1, 0.95, curbMat, 0.2);   // raised sidewalks both sides
       for (let z = -150; z < 150; z += 8) box(0.18, 0.02, 2.8, lineMat, px, terrainH(px, z) + 0.13, z, scene, false);  // centre line
@@ -2113,7 +2240,7 @@ function startApp() {
   function resetCar(c, side0) {
     c.side0 = side0;
     c.dir = side0 < 0 ? 1 : -1;             // west start heads east (+x), east start heads west
-    c.trk = c.dir > 0 ? -1 : 1;             // eastbound runs on z=-TRACK_Z, westbound on z=+TRACK_Z
+    c.trk = c.dir > 0 ? 1 : -1;             // eastbound runs on z=+TRACK_Z, westbound on z=-TRACK_Z (right-hand running)
     c.x = side0 * P_STOP;
     c.z = trackCZ(c.x, c.trk);
     c.yaw = trackYaw(c.x, c.trk, c.dir);
@@ -2149,10 +2276,10 @@ function startApp() {
     } else if (c.state === 'creep_in') {
       const target = c.dir * TABLE_X;
       const dStop = (target - c.x) * c.dir;
-      if (dStop <= 0.25) {
+      if (dStop <= 0.05) {
         c.v = 0; c.x = target; c.state = 'pre_turn'; c.t = 1.0; tableAt(c.dir).busy = true;
       } else {
-        const vt = Math.min(CREEP, Math.sqrt(2 * 1.2 * Math.max(dStop - 0.2, 0)));
+        const vt = Math.min(CREEP, Math.sqrt(2 * 1.2 * Math.max(dStop - 0.03, 0)));
         c.v = c.v < vt ? Math.min(vt, c.v + 1.0 * dt) : Math.max(vt, c.v - 1.2 * dt);
         c.x += c.dir * c.v * dt;
       }
@@ -2333,25 +2460,28 @@ function startApp() {
 
   // ---------- Explainer chapters: jump the view + show a short description ----------
   const CHAPTERS = [
-    { cam: 'follow',  title: 'Regional mass transit',
-      text: 'A regional mass-transit line — not a train and not a gondola. Passengers ride in light, wing-shaped cabins of 20\u201325 people that run individually along a slim, cable-supported elevated rail. A cabin departs roughly every 2 minutes, so the line moves on the order of 1,500 passengers per hour while each vehicle stays small and frequent. Because the structure is light and elevated, it can thread through terrain and built-up areas with a minimal footprint.' },
-    { cam: 'bogie',   title: 'A clamp that cannot derail',
-      text: 'Each bogie wraps around the round rail head and grips it from every side: a driven road wheel presses down on top, up-stop wheels run underneath, and guide wheels bear on the flanks. The vehicle is mechanically captured on the rail — like a roller-coaster car — so it cannot derail even under hard braking, steep grades or crosswinds. The driven wheels also turn the whole rail into one continuous traction surface, so the vehicle powers itself along the line.' },
-    { cam: 'wayside', title: 'The track',
-      text: 'Vehicles run on a twin elevated guideway — two slim round rails carried by tensioned cables strung between slender pylons spaced 120 m apart and standing roughly 10–20 m tall to follow the rolling terrain. The rails can hold gentle large-radius curves (about 3,000 m here) while the cables run as straight chords between pylons, so the clamps simply take up the small offset. Because the wings carry much of the weight at speed, the rails and cables stay light, the pylons can be widely spaced, and the line casts only a thin shadow on the ground — crossing water, roads and terrain with a minimal footprint.' },
+    { cam: 'follow',  title: 'Regional high-speed transport',
+      text: 'A regional transport system - not competing with mainline trains, but bringing high speed to routes where conventional high-speed rail is too costly or impossible to build.' },
     { cam: 'wing',    title: 'Wings carry the load',
-      text: 'A tandem-wing layout generates aerodynamic lift as the vehicle speeds up, carrying part of its weight so the rail and cables can stay slender and inexpensive. The faster it runs, the more the wings unload the structure. The trade-off is that the vehicle behaves like a low-flying aircraft: like any wing it reacts to gusts and turbulence, which would normally force a heavier, stiffer and slower design.' },
-    { cam: 'wing',    title: 'Active turbulence cancellation',
-      text: 'This is the technology that makes a wing-borne high-speed vehicle practical. Active cancellation by Turbulence Solutions (developed by Andras Galffy) senses incoming gusts and counteracts them in real time at the wing, smoothing out the disturbances that would otherwise shake the vehicle. The result is a stable, comfortable ride at high speed with a light structure — the active aerodynamics do the work that brute-force mass and rigidity otherwise would. It is the indispensable enabler that turns Cable Glide from a concept into something rideable.' },
+      text: 'The wings carry much of the cabin\u2019s weight in flight, removing the vertical load from the track. That is what allows high speed on slender, inexpensive infrastructure.' },
+    { cam: 'bogie',   title: 'Propulsion',
+      text: 'A roller-coaster-type clamp wraps the round rail: upper and lower wheels are pinched together onto it, and that grip gives the driven wheels the traction to propel the cabin along the line.' },
+    { cam: 'wayside', title: 'The track',
+      text: 'Two slim rails on cables between slender pylons - set about 110 m apart and 10 to 25 m high - light, elevated, crossing terrain, water and roads with a minimal footprint. It also climbs much steeper gradients than conventional high-speed rail, so the line can follow the terrain. Electrification lets cabins run frequently, for a capacity of about 1,500 passengers per hour.' },
+    { cam: 'wing',    title: 'A smooth ride at speed',
+      text: 'A wing reacts to gusts, which at high speed would shake the cabin and drive load into the structure. An onboard turbulence-cancelling system senses incoming gusts and counters them in real time at the wing - keeping passengers comfortable and holding the vehicle-cable interaction forces within safe limits.' },
     { cam: 'station', title: 'Stations & turntables',
-      text: 'At each end of the line the vehicle rolls onto a compact rotating bridge set just behind the platform. The bridge turns in place to swing the vehicle from the arrival track onto the return track — so there are no loops to build and no switch points to fail. The two tracks never actually meet: each curves to its own edge of the disc, and the bridge rotates to span the gap. Passengers board and alight at the island and side platforms while the turntable handles the direction change.' }
+      text: 'At each end a compact turntable turns the cabins onto the return track, reversing their direction efficiently and in a small footprint.' }
   ];
   const chBtns = Array.prototype.slice.call(document.querySelectorAll('#explain .chapters button'));
   const chTitleEl = document.getElementById('chapterTitle');
   const chTextEl = document.getElementById('chapterText');
   const speedNumEl = document.getElementById('speedNum');
   let speedShown = 0;
-  let currentChapter = -1, manualUntil = -1, tourTime = 0;   // auto-tour state
+  let currentChapter = -1, manualUntil = -1, tourTime = 0, chapterShownAt = 0;   // auto-tour state
+  // minimum seconds each text box stays up before the auto-tour may advance — one entry per chapter:
+  // 0 Regional · 1 Clamp · 2 Track · 3 Wings · 4 Smooth ride · 5 Stations. Tune these to taste.
+  const MIN_SHOW = [5, 5, 6, 9, 13, 3];
   function selectChapter(i, manual) {
     const c = CHAPTERS[i];
     setCam(c.cam);
@@ -2359,6 +2489,7 @@ function startApp() {
     chTextEl.textContent = c.text;
     chBtns.forEach((b, bi) => b.classList.toggle('active', bi === i));
     currentChapter = i;
+    chapterShownAt = tourTime;
     if (manual) manualUntil = tourTime + 9;     // a manual tap pauses the auto-advance for ~9 s
   }
   // which chapter should be showing, given where the tracked vehicle is along its run.
@@ -2381,9 +2512,28 @@ function startApp() {
   function showExplain(open) {
     explainEl.classList.toggle('collapsed', !open);
     explainToggleEl.classList.toggle('show', !open);
+    if (open) showAbout(false);          // the two panels are mutually exclusive
   }
   document.getElementById('explainClose').onclick = () => showExplain(false);
   explainToggleEl.onclick = () => showExplain(true);
+
+  const aboutEl = document.getElementById('about'), aboutToggleEl = document.getElementById('aboutToggle');
+  function showAbout(open) {
+    aboutEl.classList.toggle('collapsed', !open);
+    aboutToggleEl.classList.toggle('show', !open);
+    if (open) showExplain(false);        // the two panels are mutually exclusive
+  }
+  document.getElementById('aboutClose').onclick = () => showAbout(false);
+  aboutToggleEl.onclick = () => showAbout(true);
+  showAbout(false);   // start collapsed; opens from the "About us" pill
+  (function aboutTabs() {
+    const tabs = aboutEl.querySelectorAll('.ab-tabs button'), panes = aboutEl.querySelectorAll('.ab-pane');
+    tabs.forEach(btn => btn.onclick = () => {
+      const key = btn.dataset.ab;
+      tabs.forEach(b => b.classList.toggle('active', b === btn));
+      panes.forEach(p => { p.hidden = p.dataset.pane !== key; });
+    });
+  })();
 
   const BASE_FOV = 55, REF_ASPECT = 1.6;   // vertical FOV tuned for landscape
   // ---------- Postprocessing DISABLED ----------
@@ -2457,7 +2607,8 @@ function startApp() {
     // Stations while it is arriving / turning / boarding); a manual tap pauses the auto-advance briefly
     tourTime += dt;
     const want = desiredChapter(carA);
-    if (want !== currentChapter && tourTime > manualUntil) selectChapter(want, false);
+    const heldLongEnough = tourTime - chapterShownAt >= (MIN_SHOW[currentChapter] || 0);
+    if (want !== currentChapter && tourTime > manualUntil && heldLongEnough) selectChapter(want, false);
 
     // cameras — keep the vehicle exactly centred in frame in every mode
     // dt-based smoothing (frame-rate independent) removes stutter when frame timing varies
@@ -2482,11 +2633,12 @@ function startApp() {
       targetLook = new THREE.Vector3(s * 1448, 6.0, 0);   // centred on the turntable / workshop mouth
       posRate = 8; lookRate = 8;
     } else if (camMode === 'wayside') {
-      // relocated trackside vantage: an elevated 3/4 view from the far side of the span — no longer the
-      // old head-on shot straight down the line. Frames the vehicle crossing the cable-supported section.
-      const wx = 210, wz = -66, gy = terrainH(wx, wz);
+      // elevated 3/4 trackside vantage on the cabin's own side of the line (mirrors with it), framing it
+      // as it runs along the cable-supported span. Side angle → no head-on reflection streak.
+      const s = focus.x >= 0 ? 1 : -1;
+      const wx = s * 550, wz = -66, gy = terrainH(wx, wz);
       targetPos = new THREE.Vector3(wx, Math.max(gy + 12, 25), wz);
-      targetLook = focus;            // tracks the nearer car, centred
+      targetLook = focus;            // tracks the cabin, centred
       posRate = 22;
     } else if (camMode === 'wing') {
       // close 3/4 view framing the tandem wings
