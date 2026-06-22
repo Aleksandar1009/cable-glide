@@ -164,6 +164,7 @@
   #about .pn { font-size: 12px; color: #e7eef1; }
   #about .cred { font-size: 10px; color: #ffb98a; letter-spacing: 0.3px; margin-left: 4px; }
   #about .disc { font-size: 10.5px; color: #9fb2bd; line-height: 1.3; }
+  #about .bio { font-size: 10.5px; color: #c4ced5; line-height: 1.4; margin-top: 3px; }
   #about a { color: #ffb98a; text-decoration: none; }
   #about a:hover { text-decoration: underline; }
   #aboutToggle {
@@ -198,6 +199,7 @@
     <button data-ab="project" class="active">Project Cable Glide</button>
     <button data-ab="tech">Technology</button>
     <button data-ab="members">Project members</button>
+    <button data-ab="partners">Partners</button>
   </div>
 
   <div class="ab-pane" data-pane="project">
@@ -214,17 +216,28 @@
   <div class="ab-pane" data-pane="members" hidden>
     <div class="grp">
       <div class="role">Project members</div>
-      <div class="person"><span class="pn">Aleksandar Zhelyazkov</span><span class="cred">PhD</span><div class="disc">Structural Engineer</div></div>
-      <div class="person"><span class="pn">Moritz Wenzel</span><span class="cred">PhD</span><div class="disc">Structural Engineer</div></div>
-      <div class="person"><span class="pn">Andras Gallffy</span><span class="cred">DI</span><div class="disc">Aeronautics Engineer</div></div>
+      <div class="person"><span class="pn">Aleksandar Zhelyazkov</span><span class="cred">PhD</span><div class="disc">Structural Engineer</div><div class="bio">Senior structural engineer at VCE – Vienna Consulting Engineers and a Doctor of Engineering. His work spans structural dynamics, finite-element analysis and the structural health monitoring of bridges and slender structures — from the vibration behaviour of buildings beside rail lines to assessing existing structures from monitoring data.</div></div>
+      <div class="person"><span class="pn">Moritz Wenzel</span><span class="cred">PhD</span><div class="disc">Structural Engineer</div><div class="bio">Structural engineer with a PhD from the University of Trento, specialising in structural dynamics and performance-based earthquake engineering. He works on the assessment of existing bridges through structural health monitoring and traffic-load modelling, and has contributed to major bridge projects internationally.</div></div>
+      <div class="person"><span class="pn">Andras Gallffy</span><span class="cred">DI</span><div class="disc">Aeronautics Engineer</div><div class="bio">Founder and CEO of Turbulence Solutions and a control engineer and pilot with a doctorate in flight control from TU Wien. He developed the active turbulence-cancelling technology — shown to cut turbulence effects by over 80% — that underpins Cable Glide's smooth ride.</div></div>
     </div>
     <div class="grp">
       <div class="role">Advisor</div>
-      <div class="person"><span class="pn">Johannes Pammer</span><span class="cred">DI</span><div class="disc">Mechanical Engineer</div></div>
+      <div class="person"><span class="pn">Johannes Pammer</span><span class="cred">DI</span><div class="disc">Mechanical Engineer</div><div class="bio">Mechanical engineer advising the project on the vehicle's running gear, drive train and mechanical systems, with a focus on the reliability and efficiency of its moving parts.</div></div>
     </div>
     <div class="grp">
       <div class="role">Contact</div>
       <div class="nm"><a href="mailto:zhelyazkov@cableglide.at">zhelyazkov@cableglide.at</a></div>
+    </div>
+  </div>
+
+  <div class="ab-pane" data-pane="partners" hidden>
+    <div class="grp">
+      <div class="role">Funded by</div>
+      <div class="person"><span class="pn">FFG</span><div class="disc">Austrian Research Promotion Agency</div></div>
+    </div>
+    <div class="grp">
+      <div class="role">Partners</div>
+      <div class="person"><span class="pn">Turbulence Solutions</span><div class="disc">Active turbulence-cancelling technology</div></div>
     </div>
   </div>
 </div>
@@ -497,8 +510,8 @@ function startApp() {
   }
   // two car roads, each crossing under the line in a different span (run in z)
   const ROADS = [
-    { x: 300, half: 11.5, lanes: 6, base: 6.0, ph: 0.5, z0: -115, z1: 115, amp: 2.0, sw: 0.014, cx: 90, cw: 0.0016, cph: 0.4 },
-    { x: -650, half: 8.0, lanes: 4, base: 5.0, ph: 2.1, z0: -115, z1: 115, amp: 1.6, sw: 0.018, cx: 62, cw: 0.0019, cph: 2.0 }
+    { x: 265, half: 11.5, lanes: 6, base: 6.0, ph: 0.5, z0: -210, z1: 210, amp: 2.0, sw: 0.014, cx: 90, cw: 0.0016, cph: 0.4 },   // crossing centred between pylons 240/360, lengthened
+    { x: -716, half: 8.0, lanes: 4, base: 5.0, ph: 2.1, z0: -115, z1: 115, amp: 1.6, sw: 0.018, cx: 62, cw: 0.0019, cph: 2.0 }   // crossing centred between pylons -600/-720 (was sitting on -600), still west of the river
   ];
   // roads run long in z (ends off the visible terrain) and meander gently & smoothly in x (large-radius
   // plan curves, R≈4000 m). roadX = plan centreline, roadXSlope = d(roadX)/dz for the ribbon/heading.
@@ -2046,6 +2059,20 @@ function startApp() {
       box(0.55, 0.5, 0.08, metalMat, bx + 0.55, gy + 0.78, bz, scene, false);      // bench back
       scene.add(strut(new THREE.Vector3(bx - 2.2, gy, bz), new THREE.Vector3(bx - 2.2, gy + 3.0, bz), 0.06, 0.05, metalMat, true));  // sign post
       box(0.12, 0.7, 0.95, signMat, bx - 2.2, gy + 2.75, bz, scene, true);         // bus-stop sign
+      // small post-and-rail fence along the grass edge of the road, by the station
+      {
+        const postM = new THREE.MeshStandardMaterial({ color: 0x6f5a43, roughness: 0.9 });
+        const railM = new THREE.MeshStandardMaterial({ color: 0xb7a98c, roughness: 0.85 });
+        const fx = px + 6.2, step = 3.0;
+        let prev = null;
+        for (let z = -45; z <= 45.001; z += step) {
+          const gyf = terrainH(fx, z);
+          box(0.12, 1.05, 0.12, postM, fx, gyf + 0.5, z, scene, true);                                   // post
+          if (prev !== null) for (const ry of [0.42, 0.82])
+            box(0.06, 0.06, step + 0.02, railM, fx, (prev + gyf) / 2 + ry, z - step / 2, scene, false);  // rail
+          prev = gyf;
+        }
+      }
     }
   })();
 
