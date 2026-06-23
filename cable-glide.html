@@ -171,10 +171,19 @@
   #about .cform input, #about .cform textarea {
     width: 100%; box-sizing: border-box;
     border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05);
-    color: #e7eef1; font: inherit; font-size: 11.5px; padding: 6px 8px; border-radius: 7px;
+    color: #fff; font: inherit; font-size: 11.5px; padding: 6px 8px; border-radius: 7px;
   }
   #about .cform input::placeholder, #about .cform textarea::placeholder { color: #8294a0; }
   #about .cform input:focus, #about .cform textarea:focus { outline: none; border-color: #d85a30; }
+  /* keep typed text white on a dark field even when the browser autofills */
+  #about .cform input:-webkit-autofill,
+  #about .cform input:-webkit-autofill:hover,
+  #about .cform input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    caret-color: #fff;
+    -webkit-box-shadow: 0 0 0 1000px #2a2f33 inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
   #about .cform textarea { resize: vertical; min-height: 64px; }
   #about .cform button {
     border: 1px solid #d85a30; background: #d85a30; color: #fff;
