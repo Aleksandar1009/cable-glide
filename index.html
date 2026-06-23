@@ -218,6 +218,7 @@
     <button data-ab="tech">Technology</button>
     <button data-ab="members">Project members</button>
     <button data-ab="partners">Partners</button>
+    <button data-ab="contact">Contact</button>
   </div>
 
   <div class="ab-pane" data-pane="project">
@@ -242,16 +243,6 @@
       <div class="role">Advisor</div>
       <div class="person"><span class="pn">Johannes Pammer</span><span class="cred">DI</span><div class="disc">Mechanical Engineer</div><div class="bio">Mechanical engineer advising the project on the vehicle's running gear, drive train and mechanical systems, with a focus on the reliability and efficiency of its moving parts.</div></div>
     </div>
-    <div class="grp">
-      <div class="role">Contact</div>
-      <form class="cform" id="contactForm" action="https://formspree.io/f/mlgydwyy" method="POST">
-        <input type="text" name="name" placeholder="Your name" required>
-        <input type="email" name="email" placeholder="Your email" required>
-        <textarea name="message" placeholder="Your message" required></textarea>
-        <button type="submit">Send message</button>
-        <div class="cstatus" id="contactStatus" role="status" aria-live="polite"></div>
-      </form>
-    </div>
   </div>
 
   <div class="ab-pane" data-pane="partners" hidden>
@@ -262,6 +253,20 @@
     <div class="grp">
       <div class="role">Partners</div>
       <div class="person"><span class="pn">Turbulence Solutions</span><div class="disc">Active turbulence-cancelling technology</div></div>
+    </div>
+  </div>
+
+  <div class="ab-pane" data-pane="contact" hidden>
+    <div class="grp">
+      <div class="role">Contact</div>
+      <p>Questions about Cable Glide? Send us a message and we'll get back to you.</p>
+      <form class="cform" id="contactForm" action="https://formspree.io/f/mlgydwyy" method="POST">
+        <input type="text" name="name" placeholder="Your name" required>
+        <input type="email" name="email" placeholder="Your email" required>
+        <textarea name="message" placeholder="Your message" required></textarea>
+        <button type="submit">Send message</button>
+        <div class="cstatus" id="contactStatus" role="status" aria-live="polite"></div>
+      </form>
     </div>
   </div>
 </div>
