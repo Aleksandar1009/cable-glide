@@ -167,6 +167,24 @@
   #about .bio { font-size: 10.5px; color: #c4ced5; line-height: 1.4; margin-top: 3px; }
   #about a { color: #ffb98a; text-decoration: none; }
   #about a:hover { text-decoration: underline; }
+  #about .cform { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  #about .cform input, #about .cform textarea {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05);
+    color: #e7eef1; font: inherit; font-size: 11.5px; padding: 6px 8px; border-radius: 7px;
+  }
+  #about .cform input::placeholder, #about .cform textarea::placeholder { color: #8294a0; }
+  #about .cform input:focus, #about .cform textarea:focus { outline: none; border-color: #d85a30; }
+  #about .cform textarea { resize: vertical; min-height: 64px; }
+  #about .cform button {
+    border: 1px solid #d85a30; background: #d85a30; color: #fff;
+    font-size: 11px; padding: 6px 10px; border-radius: 7px; cursor: pointer; align-self: flex-start;
+  }
+  #about .cform button:hover { background: #c14e28; }
+  #about .cform button:disabled { opacity: 0.55; cursor: default; }
+  #about .cform .cstatus { font-size: 10.5px; color: #9fb2bd; min-height: 13px; }
+  #about .cform .cstatus.ok { color: #8fd49b; }
+  #about .cform .cstatus.err { color: #f0967a; }
   #aboutToggle {
     position: fixed; right: 16px; top: calc(16px + env(safe-area-inset-top)); z-index: 11;
     display: none; background: rgba(16,22,26,0.6); color: #eef2f4;
@@ -226,7 +244,13 @@
     </div>
     <div class="grp">
       <div class="role">Contact</div>
-      <div class="nm"><a href="mailto:zhelyazkov@cableglide.at">zhelyazkov@cableglide.at</a></div>
+      <form class="cform" id="contactForm" action="https://formspree.io/f/mlgydwyy" method="POST">
+        <input type="text" name="name" placeholder="Your name" required>
+        <input type="email" name="email" placeholder="Your email" required>
+        <textarea name="message" placeholder="Your message" required></textarea>
+        <button type="submit">Send message</button>
+        <div class="cstatus" id="contactStatus" role="status" aria-live="polite"></div>
+      </form>
     </div>
   </div>
 
@@ -2601,6 +2625,40 @@ function startApp() {
       const key = btn.dataset.ab;
       tabs.forEach(b => b.classList.toggle('active', b === btn));
       panes.forEach(p => { p.hidden = p.dataset.pane !== key; });
+    });
+  })();
+  (function contactFormSetup() {
+    const form = document.getElementById('contactForm');
+    if (!form) return;
+    const status = document.getElementById('contactStatus');
+    const btn = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.className = 'cstatus';
+      status.textContent = 'Sending…';
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { Accept: 'application/json' },
+        });
+        if (res.ok) {
+          form.reset();
+          status.className = 'cstatus ok';
+          status.textContent = 'Thanks — your message has been sent.';
+        } else {
+          const data = await res.json().catch(() => null);
+          const msg = data && data.errors ? data.errors.map(er => er.message).join(', ') : 'Something went wrong. Please try again.';
+          status.className = 'cstatus err';
+          status.textContent = msg;
+        }
+      } catch (err) {
+        status.className = 'cstatus err';
+        status.textContent = 'Network error. Please try again later.';
+      } finally {
+        btn.disabled = false;
+      }
     });
   })();
 
