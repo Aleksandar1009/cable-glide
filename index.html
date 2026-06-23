@@ -170,10 +170,10 @@
   #about .cform { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
   #about .cform input, #about .cform textarea {
     width: 100%; box-sizing: border-box;
-    border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.22); background: rgba(10, 14, 17, 0.72);
     color: #fff; font: inherit; font-size: 11.5px; padding: 6px 8px; border-radius: 7px;
   }
-  #about .cform input::placeholder, #about .cform textarea::placeholder { color: #8294a0; }
+  #about .cform input::placeholder, #about .cform textarea::placeholder { color: #c2ccd3; opacity: 1; }
   #about .cform input:focus, #about .cform textarea:focus { outline: none; border-color: #d85a30; }
   /* keep typed text white on a dark field even when the browser autofills */
   #about .cform input:-webkit-autofill,
@@ -216,10 +216,10 @@
 
 <button id="explainToggle" aria-label="Show vision">&#9432;&nbsp; Vision</button>
 
-<button id="aboutToggle" aria-label="Show about us">About us</button>
+<button id="aboutToggle" aria-label="Show about">About</button>
 <div id="about">
   <div class="ab-head">
-    <h1>About us</h1>
+    <h1>About</h1>
     <button id="aboutClose" aria-label="Hide">&times;</button>
   </div>
   <div class="ab-tabs">
